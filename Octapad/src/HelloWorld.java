@@ -15,7 +15,7 @@ public class HelloWorld extends JApplet {
 				}
 			});
 		} catch (Exception e) {
-			System.err.println("createGUI didn't complete successfully");
+			System.err.println("create GUI didn't complete successfully");
 		}
 	}
 }
