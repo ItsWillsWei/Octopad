@@ -1,7 +1,17 @@
+import java.io.*;
 
 public class Player {
 
- public static void main(String[]args){
-	 System.out.println("testing");
- }
+	private InputStream in;
+	private OutputStream out;
+
+	public Player()
+	{
+		
+	}
+	
+	
+	public static void main(String[] args) {
+		// Stuffs
+	}
 }
