@@ -3,12 +3,18 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author
+ * @version Jun 2, 2016
+ */
 public class Server {
 	private static Display display;
 	private ServerSocket serverSocket;
 	private int noOfPlayers;
 	private ArrayList<Player> players;
 	private ArrayList<Thread> threads;
+	private Piece[][] pieces;
 
 	public static void main(String[] args) {
 		display = new Display();
@@ -19,6 +25,9 @@ public class Server {
 		connectPlayers();
 	}
 
+	/**
+	 * Connect the players
+	 */
 	public void connectPlayers() {
 		Socket client;
 		Thread currentThread;
@@ -62,7 +71,13 @@ public class Server {
 
 		public void run() {
 			while(!p.alive()){
+				//Checks the objects around the player
 				
+				//Checks players around the player
+				
+				//Checks to see if anything will damage the player and update health
+				
+				//Check to see if the player needs an upgrade
 			}
 		}
 	}

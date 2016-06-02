@@ -28,7 +28,4 @@ public class Player {
 		return alive;
 	}
 
-	public static void main(String[] args) {
-		// Stuffs
-	}
 }
