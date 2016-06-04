@@ -1,19 +1,37 @@
 import java.awt.Color;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 public class Player {
 
-	private InputStream in; // Shouldn't this be in the thread???
+	private Socket sock;
+	private InputStream in;
+	private BufferedReader br;
 	private OutputStream out;
 	private Position pos;
-	private Color c;
+	private Color color;
+	private PrintWriter pw;
 	private boolean alive;
 
-	public Player(Position p) {
-		pos = p;
-		c = new Color((int) (Math.random() * 256), (int) (Math.random() * 256),
-				(int) (Math.random() * 256));
+	public Player(Socket s, Position p) {
+
+		try {
+			sock = s;
+			pos = p;
+			color = new Color((int) (Math.random() * 256),
+					(int) (Math.random() * 256), (int) (Math.random() * 256));
+			in = sock.getInputStream();
+			br = new BufferedReader(new InputStreamReader(in));
+			out = sock.getOutputStream();
+			pw = new PrintWriter(out);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public Position getPos() {
@@ -21,11 +39,19 @@ public class Player {
 	}
 
 	public Color getColour() {
-		return c;
+		return color;
 	}
 
 	public boolean alive() {
 		return alive;
+	}
+	
+	public void updateSurroundings(Object [] n){
+		for(Object o:n)
+		{
+			// Send it to the player via the printwriter
+		}
+		
 	}
 
 }

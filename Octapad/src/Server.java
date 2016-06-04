@@ -32,8 +32,11 @@ public class Server {
 		Socket client;
 		Thread currentThread;
 		Player currentPlayer;
-		while (true) {
-			try {
+
+		try {
+			serverSocket = new ServerSocket(421);
+			while (true) {
+
 				// Be nice to the JVM
 				Thread.sleep(10);
 
@@ -41,7 +44,7 @@ public class Server {
 				client = serverSocket.accept();
 				noOfPlayers++;
 				System.out.printf("Client #%d connected!%n", noOfPlayers);
-				currentPlayer = new Player(new Position(
+				currentPlayer = new Player(client, new Position(
 						(int) (Math.random() * 1000),
 						(int) (Math.random() * 1000)));
 				players.add(currentPlayer);
@@ -49,11 +52,15 @@ public class Server {
 				threads.add(currentThread);
 				currentThread.start();
 
-			} catch (InterruptedException | IOException e) {
-				e.printStackTrace();
 			}
-
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+
 	}
 
 	/**
@@ -70,14 +77,15 @@ public class Server {
 		}
 
 		public void run() {
-			while(!p.alive()){
-				//Checks the objects around the player
-				
-				//Checks players around the player
-				
-				//Checks to see if anything will damage the player and update health
-				
-				//Check to see if the player needs an upgrade
+			while (!p.alive()) {
+				// Checks the objects around the player
+
+				// Checks players around the player
+
+				// Checks to see if anything will damage the player and update
+				// health
+
+				// Check to see if the player needs an upgrade
 			}
 		}
 	}

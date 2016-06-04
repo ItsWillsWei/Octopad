@@ -5,7 +5,7 @@ import java.net.*;
 
 import javax.swing.*;
 
-import PlayerClient.GamePanel.ServerThread;
+//import PlayerClient.GamePanel.ServerThread;
 
 
 public class User extends JFrame{
