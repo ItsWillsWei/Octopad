@@ -35,11 +35,14 @@ public class Server {
 
 		try {
 			serverSocket = new ServerSocket(421);
+			players = new ArrayList<Player>();
+			threads = new ArrayList<Thread>();
 			while (true) {
 
 				// Be nice to the JVM
 				Thread.sleep(10);
 
+				System.out.println("Waiting for connection");
 				// Connect new players
 				client = serverSocket.accept();
 				noOfPlayers++;
@@ -51,7 +54,6 @@ public class Server {
 				currentThread = new Thread(new PlayerThread(currentPlayer));
 				threads.add(currentThread);
 				currentThread.start();
-
 			}
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
@@ -77,8 +79,20 @@ public class Server {
 		}
 
 		public void run() {
-			while (!p.alive()) {
-				// Checks the objects around the player
+			System.out.println("nice");
+			while (p.alive()) {
+
+				try {
+					Thread.sleep(100);
+					p.sendCommand("hey");
+					p.getPos();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				// Checks the objects around the player and calls the update
+				// surroundings method
 
 				// Checks players around the player
 
@@ -91,6 +105,23 @@ public class Server {
 	}
 
 	public void go() {
+
+	}
+
+	/*
+	 * Alternatively could just shout it right away
+	 */
+	public ArrayList<Player> surroundingPlayers(Position pos) {
+		ArrayList<Player> p = new ArrayList<Player>();
+
+		// Some constant for the screen size
+		for (Player currentPlayer : players) {
+			if (Math.abs(currentPlayer.getPos().getX() - pos.getX()) <= 50
+					&& Math.abs(currentPlayer.getPos().getY() - pos.getY()) <= 50)
+				p.add(currentPlayer);
+		}
+
+		return p;
 
 	}
 

@@ -16,7 +16,7 @@ public class Player {
 	private Position pos;
 	private Color color;
 	private PrintWriter pw;
-	private boolean alive;
+	private boolean alive =true;
 
 	public Player(Socket s, Position p) {
 
@@ -44,6 +44,13 @@ public class Player {
 
 	public boolean alive() {
 		return alive;
+	}
+	
+	public void sendCommand(String command)
+	{
+		System.out.println("send");
+		pw.println(command);
+		pw.flush();
 	}
 	
 	public void updateSurroundings(Object [] n){
