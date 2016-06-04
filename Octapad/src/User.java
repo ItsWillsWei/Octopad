@@ -1,5 +1,6 @@
-import java.awt.Dimension;
+import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.GeneralPath;
 import java.io.*;
 import java.net.*;
 
@@ -29,13 +30,24 @@ public class User extends JFrame{
 		private static Socket socket;
 		private static InputStream in;
 		private static OutputStream out;
+		private static GeneralPath button;
+		private static final Dimension SCREEN = new Dimension(1024, 768);
+		
+		private boolean titleScreen;
+		private JButton go;
+		
+		private int playerType;
+		private Position speed;
+		private double maxSpeed;
+		private double accel;
 		
 		GamePanel()
 		{
+			titleScreen = true;
 			//Connects to the server
 			try {
-				String ip = JOptionPane.showInputDialog(null, "Please enter the server's IP address: ", "Enter IP Address", JOptionPane.INFORMATION_MESSAGE);
-				int port = Integer.parseInt(JOptionPane.showInputDialog(null, "Please enter the server's port number: ", "Enter Port", JOptionPane.INFORMATION_MESSAGE));
+				String ip = "0";//JOptionPane.showInputDialog(null, "Please enter the server's IP address: ", "Enter IP Address", JOptionPane.INFORMATION_MESSAGE);
+				int port = 0;//Integer.parseInt(JOptionPane.showInputDialog(null, "Please enter the server's port number: ", "Enter Port", JOptionPane.INFORMATION_MESSAGE));
 				socket = new Socket(ip, port);
 				in = socket.getInputStream();
 				out = socket.getOutputStream();
@@ -48,19 +60,60 @@ public class User extends JFrame{
 			//Begin game
 			new Thread(new ServerThread()).start();
 			
-			setPreferredSize(new Dimension(1024, 768));
+			
+			setUpTitle();
+			createPlayer();
+			repaint(0);
+			
+			setPreferredSize(SCREEN);
 			addMouseListener(this);
+		}
+		
+		void setUpTitle(){
+			
+			
+			displayTitle();
+		}
+		
+		void displayTitle(){
+			
+		}
+		
+		void createPlayer(){
+			playerType = 1;
+		}
+		
+		public void paintComponent(Graphics g)
+		{
+			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D)g;
+			g.fillRect(5, 6, 7, 8);
+			int[] xPoints = {50, 50, 100, 200, 250, 250, 250, 250, 200, 100, 50, 50};
+			int[] yPoints = {100, 50, 50, 50, 50,   100, 200, 250, 250, 250, 250, 200};
+			button = new GeneralPath(GeneralPath.WIND_EVEN_ODD, xPoints.length);
+			button.moveTo(xPoints[0], yPoints[0]);
+			int i = 0;
+			for(; i < 9; i+=3)
+			{
+				button.curveTo(xPoints[i], yPoints[i],xPoints[i+1], yPoints[i+1], xPoints[i+2], yPoints[i+2]);
+				button.lineTo(xPoints[i+3], yPoints[i+3]);
+			}
+			button.curveTo(xPoints[i], yPoints[i],xPoints[i+1], yPoints[i+1], xPoints[i+2], yPoints[i+2]);
+			button.closePath();
+			g2.fill(button);
 		}
 		
 		
 		@Override
 		public void mouseClicked(MouseEvent e) {
+			System.out.println("click");
 		}
 
 		@Override
 		public void mouseEntered(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
+			System.out.println("Entered");
+			if(button.contains(e.getPoint()))
+				System.out.println(e.getX() + " " + e.getY());
 		}
 
 		@Override
