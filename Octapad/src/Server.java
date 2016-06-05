@@ -18,7 +18,7 @@ public class Server {
 
 	public static void main(String[] args) {
 		display = new Display();
-		new Server().go();
+		new Server();
 	}
 
 	public Server() {
@@ -79,13 +79,12 @@ public class Server {
 		}
 
 		public void run() {
-			System.out.println("nice");
+			p.sendCommand(p.getPos().getX()+" "+p.getPos().getY());
 			while (p.alive()) {
 
 				try {
-					Thread.sleep(100);
-					p.sendCommand("hey");
-					p.getPos();
+					Thread.sleep(5000);
+					p.update();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -104,9 +103,6 @@ public class Server {
 		}
 	}
 
-	public void go() {
-
-	}
 
 	/*
 	 * Alternatively could just shout it right away
