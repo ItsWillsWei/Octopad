@@ -47,9 +47,12 @@ public class Server {
 				client = serverSocket.accept();
 				noOfPlayers++;
 				System.out.printf("Client #%d connected!%n", noOfPlayers);
-				currentPlayer = new Player(client, new Position(
-						(int) (Math.random() * 1000),
-						(int) (Math.random() * 1000)));
+				Position current = new Position((int) (Math.random() * 1000),
+						(int) (Math.random() * 1000));
+				while (intersectsAnything(current, 50))
+					current = new Position((int) (Math.random() * 1000),
+							(int) (Math.random() * 1000));
+				currentPlayer = new Player(client, current);
 				players.add(currentPlayer);
 				currentThread = new Thread(new PlayerThread(currentPlayer));
 				threads.add(currentThread);
@@ -63,6 +66,10 @@ public class Server {
 			e.printStackTrace();
 		}
 
+	}
+
+	public boolean intersectsAnything(Position p, int radius) {
+		return false;
 	}
 
 	/**
@@ -79,11 +86,11 @@ public class Server {
 		}
 
 		public void run() {
-			p.sendCommand(p.getPos().getX()+" "+p.getPos().getY());
+			p.sendCommand(p.getPos().getX() + " " + p.getPos().getY());
 			while (p.alive()) {
 
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(1000);
 					p.update();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -102,7 +109,6 @@ public class Server {
 			}
 		}
 	}
-
 
 	/*
 	 * Alternatively could just shout it right away

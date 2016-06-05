@@ -46,8 +46,8 @@ public class User extends JFrame{
 			titleScreen = true;
 			//Connects to the server
 			try {
-				String ip = "0";//JOptionPane.showInputDialog(null, "Please enter the server's IP address: ", "Enter IP Address", JOptionPane.INFORMATION_MESSAGE);
-				int port = 0;//Integer.parseInt(JOptionPane.showInputDialog(null, "Please enter the server's port number: ", "Enter Port", JOptionPane.INFORMATION_MESSAGE));
+				String ip = "localhost";//JOptionPane.showInputDialog(null, "Please enter the server's IP address: ", "Enter IP Address", JOptionPane.INFORMATION_MESSAGE);
+				int port = 421;//Integer.parseInt(JOptionPane.showInputDialog(null, "Please enter the server's port number: ", "Enter Port", JOptionPane.INFORMATION_MESSAGE));
 				socket = new Socket(ip, port);
 				in = socket.getInputStream();
 				out = socket.getOutputStream();
