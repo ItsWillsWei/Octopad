@@ -14,6 +14,7 @@ public class Server {
 	private int noOfPlayers;
 	private ArrayList<Player> players;
 	private ArrayList<Thread> threads;
+	private ArrayList<Bullet> bullets;
 	private Piece[][] pieces;
 
 	public static void main(String[] args) {
@@ -40,7 +41,7 @@ public class Server {
 			while (true) {
 
 				// Be nice to the JVM
-				Thread.sleep(10);
+				Thread.sleep(1000);
 
 				System.out.println("Waiting for connection");
 				// Connect new players
@@ -52,7 +53,7 @@ public class Server {
 				while (intersectsAnything(current, 50))
 					current = new Position((int) (Math.random() * 1000),
 							(int) (Math.random() * 1000));
-				currentPlayer = new Player(client, current);
+				currentPlayer = new Player(client, current, noOfPlayers);
 				players.add(currentPlayer);
 				currentThread = new Thread(new PlayerThread(currentPlayer));
 				threads.add(currentThread);
@@ -90,8 +91,13 @@ public class Server {
 			while (p.alive()) {
 
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(10);
 					p.update();
+					if (p.shoot)
+						bullets.add(new Bullet(p.getPos(), p.getID())); // TODO
+																		// identify
+																		// players
+
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -107,7 +113,31 @@ public class Server {
 
 				// Check to see if the player needs an upgrade
 			}
+
+			// TODO delete someone graphically when they are dead
+			int remove = players.indexOf(p);
+			// TODO remove a thread
+			threads.remove(remove);
+			players.remove(remove);
+			for (Bullet b : bullets) {
+				if (b.getID() == p.getID())
+					bullets.remove(b);
+			}
+
 		}
+	}
+
+	public ArrayList<Bullet> surroundingShots(Position pos) {
+		ArrayList<Bullet> b = new ArrayList<Bullet>();
+
+		// Some constant for the screen size
+		for (Bullet currentBullet : bullets) {
+			if (Math.abs(currentBullet.getPos().getX() - pos.getX()) <= 50
+					&& Math.abs(currentBullet.getPos().getY() - pos.getY()) <= 50)
+				b.add(currentBullet);
+		}
+
+		return b;
 	}
 
 	/*

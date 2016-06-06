@@ -20,6 +20,10 @@ public class AIClient {
 	private boolean shoot = false;
 	private int speed = 2;
 
+	public static void main(String[]args){
+		new AIClient();
+	}
+	
 	public AIClient() {
 		// Connects to the server
 		try {

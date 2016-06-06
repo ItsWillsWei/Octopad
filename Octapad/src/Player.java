@@ -9,6 +9,7 @@ import java.net.Socket;
 
 public class Player {
 
+	private int id;
 	private int inactiveCount = 0;
 	private Socket sock;
 	private InputStream in;
@@ -23,7 +24,7 @@ public class Player {
 	boolean shoot;
 	int upgrade;
 
-	public Player(Socket s, Position p) {
+	public Player(Socket s, Position p, int id) {
 
 		try {
 			sock = s;
@@ -34,9 +35,15 @@ public class Player {
 			br = new BufferedReader(new InputStreamReader(in));
 			out = sock.getOutputStream();
 			pw = new PrintWriter(out);
+			this.id=id;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public int getID()
+	{
+		return id;
 	}
 
 	public void update() {
@@ -126,7 +133,6 @@ public class Player {
 		}
 
 		public void run() {
-			
 			try {
 				while (!br.ready() && !timeout) {
 				}

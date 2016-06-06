@@ -292,7 +292,6 @@ public class PlayerClient extends JFrame {
 					// Awards points
 					case 5:
 						int points = Integer.parseInt(command[1]);
-
 						GamePanel.this.repaint(0);
 						break;
 					// Timed out
@@ -305,7 +304,6 @@ public class PlayerClient extends JFrame {
 						break;
 					// Requesting information
 					case 7:
-						System.out.println("Getting here");
 						angle++;
 						if (shoot)
 							pw.println(pos.getX() + " " + pos.getY() + " "
