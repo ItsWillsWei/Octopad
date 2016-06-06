@@ -31,6 +31,8 @@ public class User extends JFrame{
 		private static InputStream in;
 		private static OutputStream out;
 		private static GeneralPath button;
+		private KButton goButton;
+		private KInputPanel nameInput, ipInput, portInput;
 		private static final Dimension SCREEN = new Dimension(1024, 768);
 		
 		private boolean titleScreen;
@@ -60,7 +62,7 @@ public class User extends JFrame{
 			//Begin game
 			new Thread(new ServerThread()).start();
 			
-			
+			setLayout(new GridLayout(5,5));
 			setUpTitle();
 			createPlayer();
 			repaint(0);
@@ -70,7 +72,63 @@ public class User extends JFrame{
 		}
 		
 		void setUpTitle(){
+			nameInput = new KInputPanel("Name: ");
+			nameInput.setBackground(Color.red);
+			nameInput.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Joining server");
+					
+					
+				}
+				
+			});
 			
+			ipInput = new KInputPanel("IP: ");
+			ipInput.setBackground(Color.RED);
+			ipInput.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Joining server");
+					
+					
+				}
+				
+			});
+			
+			portInput = new KInputPanel("Port: ");
+			portInput.setBackground(Color.RED);
+			portInput.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Joining server");
+					
+					
+				}
+				
+			});
+			
+			goButton = new KButton("Go", 300, 100);
+			goButton.setBackground(Color.RED);
+			goButton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Joining server");
+					
+					
+				}
+				
+			});
+			
+			
+			add(new JLabel("a"));
+			add(new JLabel("b"));
+			add(new JLabel("c"));
+			add(new JLabel("d"));
+			add(nameInput);
+			add(ipInput);
+			add(portInput);
+			add(goButton);
+			add(new JLabel("a"));
+			add(new JLabel("b"));
+			add(new JLabel("c"));
+			add(new JLabel("d"));
 			
 			displayTitle();
 		}
@@ -114,6 +172,19 @@ public class User extends JFrame{
 			System.out.println("Entered");
 			if(button.contains(e.getPoint()))
 				System.out.println(e.getX() + " " + e.getY());
+//			while(true)
+//			{
+//				if(button.contains(e.getPoint()))
+//					System.out.println(e.getX() + " " + e.getY());
+//				else
+//					System.out.println("no");
+//				try {
+//					Thread.sleep(500);
+//				} catch (InterruptedException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				}
+//			}
 		}
 
 		@Override

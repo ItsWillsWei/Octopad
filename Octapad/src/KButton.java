@@ -34,8 +34,12 @@ public class KButton extends Component implements MouseListener {
 		// paint the interior of the button
 		if (within && pressed) {
 			g.setColor(getBackground().darker().darker());
-		} else {
-			g.setColor(getBackground());
+		} else if(within)
+		{
+			g.setColor(getBackground().brighter().brighter().brighter());
+		}
+		else {
+			g.setColor(getBackground().darker());
 		}
 		g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
 
