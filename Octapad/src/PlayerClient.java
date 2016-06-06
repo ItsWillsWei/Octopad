@@ -314,7 +314,44 @@ public class PlayerClient extends JFrame {
 						pw.flush();
 						shoot = false;
 						GamePanel.this.repaint(0);
+//						System.exit(0);
 						break;
+					// Sending any new objects
+					case 8:
+						int index = 1;
+						int count = Integer.parseInt(command[index]);
+						index++;
+						for (int i = 0; i < count; i++) {
+							int x= Integer.parseInt(command[index]);
+							index++;
+							int y= Integer.parseInt(command[index]);
+							index++;
+						}
+						count = Integer.parseInt(command[index]);
+						index++;
+						
+						for(int i=0;i<count;i++){
+							int x= Integer.parseInt(command[index]);
+							index++;
+							int y= Integer.parseInt(command[index]);
+							index++;
+							int r= Integer.parseInt(command[index]);
+							index++;
+							int g= Integer.parseInt(command[index]);
+							index++;
+							int b= Integer.parseInt(command[index]);
+							index++;
+							int upgrade = Integer.parseInt(command[index]);
+							index++;
+						}
+					
+						
+						//TODO change the graphics based on this information
+						
+						
+
+						break;
+
 					}
 				}
 			}

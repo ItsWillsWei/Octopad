@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Player {
 
@@ -19,10 +20,12 @@ public class Player {
 	private Color color;
 	private PrintWriter pw;
 	private boolean alive = true;
-	private int timeOut=1000;
+	private int timeOut = 1000;
 	private int angle;
-	boolean shoot;
-	int upgrade;
+	private boolean shoot;
+	private int upgrade;
+	private ArrayList<Bullet> bullets;
+	private ArrayList<Player> players;
 
 	public Player(Socket s, Position p, int id) {
 
@@ -35,19 +38,35 @@ public class Player {
 			br = new BufferedReader(new InputStreamReader(in));
 			out = sock.getOutputStream();
 			pw = new PrintWriter(out);
-			this.id=id;
+			this.id = id;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public int getID()
-	{
-		return id;
+
+	public int getUpgrade() {
+		return upgrade;
 	}
 
-	public void update() {
-		this.requestInfo();
+	public boolean shooting() {
+		return shoot;
+	}
+
+	public ArrayList<Player> getSurroundingPlayers() {
+		return players;
+	}
+
+	public void setSurroundings(ArrayList<Player> p, ArrayList<Bullet> b) {
+		players = p;
+		bullets = b;
+	}
+
+	public ArrayList<Bullet> getSurroundingBullets() {
+		return bullets;
+	}
+
+	public int getID() {
+		return id;
 	}
 
 	public Position getPos() {
@@ -68,13 +87,27 @@ public class Player {
 		pw.flush();
 	}
 
-	public void updateSurroundings(Object[] n) {
-		for (Object o : n) {
-			// Send it to the player via the printwriter
+	public void updateSurroundings() {
+		pw.print("8 ");
+		pw.print(bullets.size() + " ");
+		for (Bullet bullet : bullets) {
+			pw.print(bullet.pos.getX() + " " + bullet.pos.getY() + " ");
 		}
+		pw.print(players.size() + " ");
+		for (Player player : players) {
+			pw.print(player.getPos().getX() + " " + player.getPos().getY()
+					+ " " + player.getColour().getRed() + " "
+					+ player.getColour().getGreen() + " "
+					+ player.getColour().getBlue() + " " + player.getUpgrade());
+		}
+		pw.println();
+		pw.flush();
 
 	}
 
+	/**
+	 * Asking for an update on the player
+	 */
 	public void requestInfo() {
 		try {
 			while (br.ready())
@@ -138,7 +171,7 @@ public class Player {
 				}
 				;
 
-				//System.out.println(timeout);
+				// System.out.println(timeout);
 				if (!timeout) {
 					System.out.println("Communcation Thread active");
 					// If the first number is 1 (indicating a player wants to
@@ -161,6 +194,7 @@ public class Player {
 
 		public boolean timeout() {
 			timeout = true;
+			alive = false;
 			return infoReceived;
 		}
 
