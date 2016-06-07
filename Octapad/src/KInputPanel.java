@@ -1,14 +1,15 @@
 import java.awt.*;
 import java.awt.event.*;
 
-public class KInputPanel extends Component implements MouseListener,
-		KeyListener {
+public class KInputPanel extends Component  {
 	private ActionListener actionListener;
 	private String title, input;
 	private boolean selected;
 
 	KInputPanel(String msg) {
 		enableEvents(AWTEvent.MOUSE_EVENT_MASK);
+		enableEvents(AWTEvent.KEY_EVENT_MASK);
+		setFocusable(true);
 		title = msg;
 		input = "";
 		selected = false;
@@ -20,6 +21,8 @@ public class KInputPanel extends Component implements MouseListener,
 
 	public void setSelected(boolean state) {
 		selected = state;
+		setFocusable(state);
+		repaint(0);
 	}
 
 	/**
@@ -32,13 +35,14 @@ public class KInputPanel extends Component implements MouseListener,
 	public void addActionListener(ActionListener listener) {
 		actionListener = AWTEventMulticaster.add(actionListener, listener);
 		enableEvents(AWTEvent.MOUSE_EVENT_MASK);
+		enableEvents(AWTEvent.KEY_EVENT_MASK);
 	}
 
 	public void paint(Graphics g) {
 		if (selected) {
-			g.setColor(getBackground());
+			g.setColor(Color.RED);//getBackground());
 		} else {
-			g.setColor(getBackground().darker());
+			g.setColor(Color.BLUE);//getBackground().darker());
 		}
 
 		// Draws outside box
@@ -63,63 +67,29 @@ public class KInputPanel extends Component implements MouseListener,
 		switch (e.getID()) {
 		case MouseEvent.MOUSE_PRESSED:
 			selected = true;
+			actionListener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, title));
+			setFocusable(true);
+			requestFocusInWindow();
 			repaint();
 		}
 	}
-
 	@Override
-	public void keyPressed(KeyEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void keyReleased(KeyEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void keyTyped(KeyEvent e) {
-		System.out.println("hi");
-		if (selected) {
+	public void processKeyEvent(KeyEvent e){
+		
+		if (selected && e.getID() == KeyEvent.KEY_RELEASED) {
+			
 			int typed = e.getKeyCode();
+			System.out.println(title+" type: " + typed);
 			// Numbers 48-57 - 65 - 90
 			if (typed >= 48 && typed <= 57)
 				input += (typed - 48);
 			else if (typed >= 65 && typed <= 90)
-				input += 'A' + typed - 65;
+				input += (char)('A' + typed - 65);
+			else if (typed == KeyEvent.VK_BACK_SPACE && input.length() > 0)
+				input = input.substring(0, input.length()-1);
+			else if(typed == KeyEvent.VK_SPACE)
+				input += " ";
 		}
-		repaint();
-	}
-
-	@Override
-	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mousePressed(MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent e) {
-		// TODO Auto-generated method stub
-
+		repaint(0);
 	}
 }

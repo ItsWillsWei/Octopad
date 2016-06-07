@@ -112,8 +112,8 @@ public class Bezier extends JFrame {
 		}
 
 		void drawCurve() {
-			if(points.size() == 0)
-				JOptionPane.showMessageDialog(null, "You must first make points before drawing!", "Warning!", JOptionPane.WARNING_MESSAGE);
+			if(points.size() < 2)
+				JOptionPane.showMessageDialog(null, "You must have at least 2 points before drawing!", "Warning!", JOptionPane.WARNING_MESSAGE);
 			else
 			{
 				finalCurve.clear();
@@ -140,13 +140,13 @@ public class Bezier extends JFrame {
 			g.setColor(Color.BLACK);
 			for (int point = 0; point < points.size(); point++) {
 				Point curr = points.get(point);
-				g.fillOval(curr.x - 4, curr.y - 4, 9, 10);
+				g.fillOval((int)curr.x - 4, (int)curr.y - 4, 9, 10);
 				if(point == 0)
 					g.setColor(Color.GRAY);
 				else
 				{
 					Point last = points.get(point - 1);
-					g.drawLine(last.x, last.y, curr.x, curr.y);
+					g.drawLine((int)last.x, (int)last.y, (int)curr.x, (int)curr.y);
 				}
 			}
 
@@ -170,7 +170,7 @@ public class Bezier extends JFrame {
 					repaint(0);
 				}
 				for(Point point: finalCurve)
-					g.fillOval(point.x, point.y, 5, 5);
+					g.fillOval((int)point.x, (int)point.y, 5, 5);
 				/*//QUADRATIC
 				first1.x = (int) (a.x + (b.x - a.x) * timeRatio)-2;
 				first1.y = (int) (a.y + (b.y - a.y) * timeRatio)-2;
@@ -237,22 +237,35 @@ public class Bezier extends JFrame {
 			{
 				Point first = points.get(point);
 				Point middle = points.get(point+1);
-				int firstx = (int)(first.x + (middle.x-first.x)*timeRatio);
-				int firsty = (int)(first.y + (middle.y-first.y)*timeRatio);
+				double firstx = first.x + (middle.x-first.x)*timeRatio;
+				double firsty = first.y + (middle.y-first.y)*timeRatio;
 				newPoints.add(new Point(firstx, firsty));
-				g.fillOval(firstx, firsty, 5, 5);
+				g.fillOval((int)firstx, (int)firsty, 5, 5);
 			}
 			end--;
 			for(int point = 0; point < end; point++)
 			{
 				Point newFirst = newPoints.get(point);
 				Point newMiddle = newPoints.get(point+1);
-				g.drawLine(newFirst.x, newFirst.y, newMiddle.x, newMiddle.y);
+				g.drawLine((int)newFirst.x, (int)newFirst.y, (int)newMiddle.x, (int)newMiddle.y);
 			}
 			if(end > 0)
 				return draw(g, newPoints, end, timeRatio, color%6);
 			return newPoints.get(0);
 			//End if only last point to draw
+		}
+	}
+	
+	static class Point{
+		double x;
+		double y;
+		Point(double x, double y){
+			this.x = x;
+			this.y = y;
+		}
+		Point(java.awt.Point point){
+			x = point.x;
+			y = point.y;
 		}
 	}
 
