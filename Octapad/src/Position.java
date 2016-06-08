@@ -18,16 +18,16 @@ public class Position {
 	public void increaseX(){
 		x++;
 	}
-	public void setX(int value)
+	public void increaseX(int increment)
 	{
-		x = value;
+		x+= increment;
 	}
 	
 	public void increaseY(){
 		y++;
 	}
-	public void setY(int value){
-		y = value;
+	public void increaseY(int increment){
+		y+= increment;
 	}
 
 }

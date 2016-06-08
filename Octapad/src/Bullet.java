@@ -15,4 +15,12 @@ public class Bullet extends Piece{
 	public int getID(){
 		return id;
 	}
+	
+	public void moveUp(int pixels){
+		pos =new Position(pos.getX(), pos.getY()-pixels);
+	}
+	
+	public void moveDown(int pixels){
+		pos =new Position(pos.getX(), pos.getY()-pixels);
+	}
 }

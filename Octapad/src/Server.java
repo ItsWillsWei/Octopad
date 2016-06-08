@@ -9,6 +9,8 @@ import java.util.ArrayList;
  * @version Jun 2, 2016
  */
 public class Server {
+	private int WIDTH = 1024;
+	private int HEIGHT = 700;
 	private static Display display;
 	private ServerSocket serverSocket;
 	private int noOfPlayers;
@@ -39,24 +41,26 @@ public class Server {
 			threads = new ArrayList<Thread>();
 			while (true) {
 
-				// Be nice to the JVM
-				Thread.sleep(1000);
-
 				System.out.println("Waiting for connection");
 				// Connect new players
 				client = serverSocket.accept();
 				noOfPlayers++;
 				System.out.printf("Client #%d connected!%n", noOfPlayers);
-				Position current = new Position((int) (Math.random() * 1000),
-						(int) (Math.random() * 1000));
+				Position current = new Position(
+						(int) (Math.random() * (WIDTH - 30)) + 20,
+						(int) (Math.random() * (HEIGHT - 30)) + 20);
 				while (intersectsAnything(current, 50))
-					current = new Position((int) (Math.random() * 1000),
-							(int) (Math.random() * 1000));
+					current = new Position(
+							(int) (Math.random() * (WIDTH - 30)) + 20,
+							(int) (Math.random() * (HEIGHT - 30)) + 20);
 				currentPlayer = new Player(client, current, noOfPlayers);
 				players.add(currentPlayer);
 				currentThread = new Thread(new PlayerThread(currentPlayer));
 				threads.add(currentThread);
 				currentThread.start();
+
+				// Be nice to the JVM
+				Thread.sleep(1000);
 			}
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
@@ -70,7 +74,8 @@ public class Server {
 
 	// TODO make this work
 	public boolean intersectsAnything(Position p, int radius) {
-		return false;
+		return !(p.getX() - radius > 0 && p.getX() + radius < WIDTH
+				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
 
 	/**
@@ -81,6 +86,7 @@ public class Server {
 	 */
 	class PlayerThread implements Runnable {
 		Player p;
+		ArrayList<Bullet> nonconcurrentException = (ArrayList<Bullet>) bullets.clone();
 
 		public PlayerThread(Player player) {
 			p = player;
@@ -88,20 +94,27 @@ public class Server {
 
 		public void run() {
 
-			p.sendCommand(p.getPos().getX() + " " + p.getPos().getY());
-			while (p.alive()) {
+			// Initial position and colour
+			p.sendCommand(p.getPos().getX() + " " + p.getPos().getY() + " "
+					+ p.getColour().getRed() + " " + p.getColour().getGreen()
+					+ " " + p.getColour().getBlue());
 
+			// Keep track while the player lives
+			while (p.alive()) {
 				long startTime = System.nanoTime(); // start time plus 10 ms
 				// Update objects around it, trying to avoid lag
-				p.setSurroundings(surroundingPlayers(p), surroundingShots(p));
+				nonconcurrentException = (ArrayList<Bullet>) bullets.clone();;
+				p.setSurroundings((ArrayList<Player>)surroundingPlayers(p).clone(), (ArrayList<Bullet>)surroundingShots(p).clone());
 				p.updateSurroundings();
 				try {
-					Thread.sleep(10);
+					Thread.sleep(100);
 					p.requestInfo();
-					if (p.shooting())
-						bullets.add(new Bullet(p.getPos(), p.getID())); // TODO
-																		// identify
-																		// players
+					if (p.shooting()) {
+						System.out.println("Shot fired");
+						bullets.add(new Bullet(p.getPos(), p.getID()));
+					} // TODO
+						// identify
+						// players
 
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -118,20 +131,24 @@ public class Server {
 				// Check to see if the player needs an upgrade
 			}
 
+			// Tell them they are dead
 			System.out.println("Player " + p.getID() + " is dead");
+			p.sendCommand("6");
 			// TODO delete someone graphically when they are dead
-			int remove = players.indexOf(p);
+			
 			// TODO remove a thread
-			threads.remove(remove);
-			players.remove(remove);
 			for (Bullet b : bullets) {
 				if (b.getID() == p.getID())
 					bullets.remove(b);
 			}
-
+			int remove = players.indexOf(p);
+			players.remove(remove);
+			threads.remove(remove);
 		}
 	}
-
+ 
+	// TODO move this inside so that they won't try to access resources at the
+	// same time
 	/**
 	 * 
 	 * @param p
@@ -141,18 +158,20 @@ public class Server {
 	// that way we don't have to worry about it later
 	public ArrayList<Bullet> surroundingShots(Player p) {
 		ArrayList<Bullet> b = new ArrayList<Bullet>();
-
+		System.out.println("accessing bullets atm");
 		// Some constant for the screen size
 		for (Bullet currentBullet : bullets) {
-			if (Math.abs(currentBullet.getPos().getX() - p.getPos().getX()) <= 50
+			if (Math.abs(currentBullet.getPos().getX() - p.getPos().getX()) <= 500
 					&& Math.abs(currentBullet.getPos().getY()
-							- p.getPos().getY()) <= 50) {
+							- p.getPos().getY()) <= 500) {
 				// if (p.getSurroundingBullets().contains(currentBullet))
 				b.add(currentBullet);
 				// if (collision)
 				// decrement health, change course of bullet
 			}
 		}
+		
+		System.out.println("Done accessing bullets");
 
 		return b;
 	}
@@ -173,14 +192,12 @@ public class Server {
 			if (!player.equals(currentPlayer))
 				// && !player.getSurroundingPlayers().contains(currentPlayer))
 				if (Math.abs(currentPlayer.getPos().getX()
-						- player.getPos().getX()) <= 50
+						- player.getPos().getX()) <= 500
 						&& Math.abs(currentPlayer.getPos().getY()
-								- player.getPos().getY()) <= 50)
+								- player.getPos().getY()) <= 500)
 					p.add(currentPlayer);
 		}
-
 		return p;
-
 	}
 
 }

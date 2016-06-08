@@ -9,9 +9,10 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 public class Player {
-
+	private int WIDTH = 1024;
+	private int HEIGHT = 700;
 	private int id;
-	private int inactiveCount = 0;
+	private int activeCount = 0;
 	private Socket sock;
 	private InputStream in;
 	private BufferedReader br;
@@ -20,11 +21,11 @@ public class Player {
 	private Color color;
 	private PrintWriter pw;
 	private boolean alive = true;
-	private int timeOut = 1000;
+	private int timeOut = 5000;
 	private int angle;
 	private boolean shoot;
-	private int upgrade;
-	private ArrayList<Bullet> bullets;
+	private int upgrade = 0;
+	private ArrayList<Bullet> bullet;
 	private ArrayList<Player> players;
 
 	public Player(Socket s, Position p, int id) {
@@ -34,6 +35,7 @@ public class Player {
 			pos = p;
 			color = new Color((int) (Math.random() * 256),
 					(int) (Math.random() * 256), (int) (Math.random() * 256));
+			System.out.println(color);
 			in = sock.getInputStream();
 			br = new BufferedReader(new InputStreamReader(in));
 			out = sock.getOutputStream();
@@ -58,11 +60,11 @@ public class Player {
 
 	public void setSurroundings(ArrayList<Player> p, ArrayList<Bullet> b) {
 		players = p;
-		bullets = b;
+		bullet = b;
 	}
 
 	public ArrayList<Bullet> getSurroundingBullets() {
-		return bullets;
+		return bullet;
 	}
 
 	public int getID() {
@@ -89,8 +91,8 @@ public class Player {
 
 	public void updateSurroundings() {
 		pw.print("8 ");
-		pw.print(bullets.size() + " ");
-		for (Bullet bullet : bullets) {
+		pw.print(bullet.size() + " ");
+		for (Bullet bullet : bullet) {
 			pw.print(bullet.pos.getX() + " " + bullet.pos.getY() + " ");
 		}
 		pw.print(players.size() + " ");
@@ -98,7 +100,8 @@ public class Player {
 			pw.print(player.getPos().getX() + " " + player.getPos().getY()
 					+ " " + player.getColour().getRed() + " "
 					+ player.getColour().getGreen() + " "
-					+ player.getColour().getBlue() + " " + player.getUpgrade());
+					+ player.getColour().getBlue() + " " + player.getUpgrade()
+					+ " ");
 		}
 		pw.println();
 		pw.flush();
@@ -136,16 +139,16 @@ public class Player {
 			}
 		}
 
-		communistThread.timeout();
-
 		// Tell a player of timeout, otherwise update the position
 		if (!communistThread.updated()) {
+			System.out.println("Manual timeout");
+			communistThread.timeout();
 			pw.println("6");
 			pw.flush();
 		} else
-			inactiveCount++;
+			activeCount++;
 
-		if (inactiveCount > 100) {
+		if (activeCount > 100) {
 			alive = false;
 			System.out.println("Timed out too much");
 		}
@@ -173,16 +176,21 @@ public class Player {
 
 				// System.out.println(timeout);
 				if (!timeout) {
-					System.out.println("Communcation Thread active");
+					// System.out.println("Communcation Thread active");
 					// If the first number is 1 (indicating a player wants to
 					// move)
 					String[] command = br.readLine().split(" ");
 					move = new Position(Integer.parseInt(command[0]),
 							Integer.parseInt(command[1]));
-					infoReceived = true;
+
 					angle = Integer.parseInt(command[2]);
 					shoot = command[3].equals("1"); // True or false
 					upgrade = Integer.parseInt(command[4]);
+					infoReceived = true;
+					if (shoot){
+						System.out
+								.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+					}
 					System.out.println("Received: " + move.getX() + " "
 							+ move.getY() + " " + angle + " " + shoot + " "
 							+ upgrade);
@@ -199,11 +207,7 @@ public class Player {
 		}
 
 		public boolean updated() {
-			if (infoReceived) {
-				return true;
-			} else {
-				return false;
-			}
+			return infoReceived;
 		}
 	}
 }

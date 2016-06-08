@@ -12,13 +12,14 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class PlayerClient extends JFrame {
-
+	private int WIDTH = 1024;
+	private int HEIGHT = 700;
 	private static GamePanel game;
 
 	/**
@@ -64,12 +65,18 @@ public class PlayerClient extends JFrame {
 		private static BufferedReader br;
 		private static PrintWriter pw;
 
+		Color c;
+		private boolean alive = true;
 		private static String ip = "localhost";
 		private static int port = 421;
 		private Position pos;
 		private int angle;
-		private int upgrade;
+		private int upgrade = 0;
 		private boolean shoot = false;
+		private int reloadTime = 1000;
+		private int points = 0;
+		private ArrayList<Position> bullet = new ArrayList<Position>();
+		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
 
 		/**
 		 * Creates a new GamePanel
@@ -106,7 +113,11 @@ public class PlayerClient extends JFrame {
 				String[] command = br.readLine().split(" ");
 				pos = new Position(Integer.parseInt(command[0]),
 						Integer.parseInt(command[1]));
+				c = new Color(Integer.parseInt(command[2]),
+						Integer.parseInt(command[3]),
+						Integer.parseInt(command[4]));
 				System.out.println(pos.getX() + " " + pos.getY());
+				repaint(0);
 
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
@@ -117,87 +128,108 @@ public class PlayerClient extends JFrame {
 			// Begin game
 			new Thread(new ServerThread()).start();
 
-			setPreferredSize(new Dimension(1024, 768));
+			setPreferredSize(new Dimension(1024, 700));
 			addMouseListener(this);
 		}
 
 		@Override
 		public void paintComponent(Graphics g) {
-			((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-					RenderingHints.VALUE_ANTIALIAS_ON);
-			g.setColor(Color.WHITE);
-			g.clearRect(0, 0, getWidth(), getHeight());
+			if (alive) {
+				((Graphics2D) g).setRenderingHint(
+						RenderingHints.KEY_ANTIALIASING,
+						RenderingHints.VALUE_ANTIALIAS_ON);
+				g.setColor(Color.WHITE);
+				g.clearRect(0, 0, getWidth(), getHeight());
 
-			// Drawns the board
-			for (int i = 0; i < 17; i++) {
-				for (int j = 0; j < 17; j++) {
-					if (board[i][j] != -1) {
-						int x = (int) (getWidth() / 2 - WIDTH / 2 + 4 * SPACE
-								/ 2 - DIAMETER / 2)
-								+ (j * SPACE - i * SPACE / 2);
-						int y = (int) ((getHeight() / 2 - HEIGHT / 2) + (i
-								* SPACE * Math.sqrt(3) / 2));
-						boardCoords[i][j][0] = x + DIAMETER / 2;
-						boardCoords[i][j][1] = y + DIAMETER / 2;
-						g.setColor(Color.BLACK);
-						g.fillOval(x - BORDER, y - BORDER, DIAMETER + 2
-								* BORDER, DIAMETER + 2 * BORDER);
-						// 0 = empty position
-						if (board[i][j] == 0) {
-							g.setColor(Color.LIGHT_GRAY);
-							// 1-6 player positions
-						} else if (board[i][j] == 1) {
-							g.setColor(Color.RED);
-						} else if (board[i][j] == 2) {
-							g.setColor(Color.ORANGE);
-						} else if (board[i][j] == 3) {
-							g.setColor(Color.YELLOW);
-						} else if (board[i][j] == 4) {
-							g.setColor(Color.GREEN);
-						} else if (board[i][j] == 5) {
-							g.setColor(Color.BLUE);
-						} else if (board[i][j] == 6) {
-							g.setColor(Color.MAGENTA.darker());
-						}
+				// Draw yourself
+				g.setColor(c);
+				g.fillOval(pos.getX() - 15, pos.getY() - 15, 30, 30);
 
-						// Draw a selected piece darker than the other pieces
-						if (selected && selectedCoord[0] == i
-								&& selectedCoord[1] == j) {
-							Color c = g.getColor();
-							Color n = c.darker();
-							g.setColor(n);
-						}
-						g.fillOval(x, y, DIAMETER, DIAMETER);
-					}
+				// Bullets
+				g.setColor(Color.red);
+				for (Position p : bullet) {
+					// System.out.println("attempting to draw");
+					g.fillOval(p.getX() - 3, p.getY() - 3, 7, 7);
 				}
-			}
 
-			// Draw the player's colour
-			g.setColor(PLAYERS[colour]);
-			g.setFont(g.getFont().deriveFont(Font.PLAIN, 24));
-			if (colour > 0) {
-				g.drawString("You are player: " + colour, 5, 36);
-			} else {
-				g.drawString("You have not yet been assigned a colour", 5, 36);
-			}
-			g.setColor(Color.BLACK);
+				for (tempPlayer p : players) {
+					g.setColor(p.getColor());
+					g.fillOval(p.getPos().getX() - 15, p.getPos().getY() - 15,
+							30, 30);
+				}
+			} else
+				this.setEnabled(false);
 
-			// Information messages
-			if (turn) {
-				g.drawString("It is your turn", 5, 60);
-			}
-			if (showTime) {
-				g.drawString("Time: " + time, 170, 60);
-			}
-			if (invalid) {
-				g.drawString("You have made an invalid move", 5, 80);
-			}
-			if (timedOut) {
-				g.drawString("You have timed out", 5, 100);
-			}
-			if (winner != 0) {
-				g.drawString("Player " + winner + " has won!", 5, 120);
-			}
+			// // Drawns the board
+			// for (int i = 0; i < 17; i++) {
+			// for (int j = 0; j < 17; j++) {
+			// if (board[i][j] != -1) {
+			// int x = (int) (getWidth() / 2 - WIDTH / 2 + 4 * SPACE
+			// / 2 - DIAMETER / 2)
+			// + (j * SPACE - i * SPACE / 2);
+			// int y = (int) ((getHeight() / 2 - HEIGHT / 2) + (i
+			// * SPACE * Math.sqrt(3) / 2));
+			// boardCoords[i][j][0] = x + DIAMETER / 2;
+			// boardCoords[i][j][1] = y + DIAMETER / 2;
+			// g.setColor(Color.BLACK);
+			// g.fillOval(x - BORDER, y - BORDER, DIAMETER + 2
+			// * BORDER, DIAMETER + 2 * BORDER);
+			// // 0 = empty position
+			// if (board[i][j] == 0) {
+			// g.setColor(Color.LIGHT_GRAY);
+			// // 1-6 player positions
+			// } else if (board[i][j] == 1) {
+			// g.setColor(Color.RED);
+			// } else if (board[i][j] == 2) {
+			// g.setColor(Color.ORANGE);
+			// } else if (board[i][j] == 3) {
+			// g.setColor(Color.YELLOW);
+			// } else if (board[i][j] == 4) {
+			// g.setColor(Color.GREEN);
+			// } else if (board[i][j] == 5) {
+			// g.setColor(Color.BLUE);
+			// } else if (board[i][j] == 6) {
+			// g.setColor(Color.MAGENTA.darker());
+			// }
+			//
+			// // Draw a selected piece darker than the other pieces
+			// if (selected && selectedCoord[0] == i
+			// && selectedCoord[1] == j) {
+			// Color c = g.getColor();
+			// Color n = c.darker();
+			// g.setColor(n);
+			// }
+			// g.fillOval(x, y, DIAMETER, DIAMETER);
+			// }
+			// }
+			// }
+			//
+			// // Draw the player's colour
+			// g.setColor(PLAYERS[colour]);
+			// g.setFont(g.getFont().deriveFont(Font.PLAIN, 24));
+			// if (colour > 0) {
+			// g.drawString("You are player: " + colour, 5, 36);
+			// } else {
+			// g.drawString("You have not yet been assigned a colour", 5, 36);
+			// }
+			// g.setColor(Color.BLACK);
+			//
+			// // Information messages
+			// if (turn) {
+			// g.drawString("It is your turn", 5, 60);
+			// }
+			// if (showTime) {
+			// g.drawString("Time: " + time, 170, 60);
+			// }
+			// if (invalid) {
+			// g.drawString("You have made an invalid move", 5, 80);
+			// }
+			// if (timedOut) {
+			// g.drawString("You have timed out", 5, 100);
+			// }
+			// if (winner != 0) {
+			// g.drawString("Player " + winner + " has won!", 5, 120);
+			// }
 		}
 
 		/**
@@ -232,12 +264,13 @@ public class PlayerClient extends JFrame {
 				long start = System.currentTimeMillis();
 				while (true) {
 					// Do not run the timer if it is not the player's turn
-					if (turn == false)
+					if (shoot) {
 						start = System.currentTimeMillis();
+					}
 					// Keep track of the time elapsed in seconds
 					else {
-						time = (int) ((System.currentTimeMillis() - start) / 1000);
-						GamePanel.this.repaint(0);
+						time = (int) ((System.currentTimeMillis() - start));
+						// GamePanel.this.repaint(0);
 					}
 				}
 			}
@@ -291,16 +324,18 @@ public class PlayerClient extends JFrame {
 						break;
 					// Awards points
 					case 5:
-						int points = Integer.parseInt(command[1]);
+						points += Integer.parseInt(command[1]);
 						GamePanel.this.repaint(0);
 						break;
-					// Timed out
+					// Timed out or dead
 					case 6:
+						alive = false;
 						turn = false;
 						showTime = false;
 						timedOut = true;
 						selected = false;
-						GamePanel.this.repaint(0);
+						// TODO end here but just testing right now
+						System.exit(0);
 						break;
 					// Requesting information
 					case 7:
@@ -314,41 +349,47 @@ public class PlayerClient extends JFrame {
 						pw.flush();
 						shoot = false;
 						GamePanel.this.repaint(0);
-//						System.exit(0);
+						// System.exit(0);
 						break;
 					// Sending any new objects
 					case 8:
+
+						// any bullets in the area
 						int index = 1;
 						int count = Integer.parseInt(command[index]);
 						index++;
 						for (int i = 0; i < count; i++) {
-							int x= Integer.parseInt(command[index]);
+							int x = Integer.parseInt(command[index]);
 							index++;
-							int y= Integer.parseInt(command[index]);
+							int y = Integer.parseInt(command[index]);
 							index++;
+							bullet.add(new Position(x, y));
 						}
+						// GamePanel.this.repaint(0);
 						count = Integer.parseInt(command[index]);
 						index++;
-						
-						for(int i=0;i<count;i++){
-							int x= Integer.parseInt(command[index]);
+
+						// sending all players in your area
+						for (int i = 0; i < count; i++) {
+							int x = Integer.parseInt(command[index]);
 							index++;
-							int y= Integer.parseInt(command[index]);
+							int y = Integer.parseInt(command[index]);
 							index++;
-							int r= Integer.parseInt(command[index]);
+							int r = Integer.parseInt(command[index]);
 							index++;
-							int g= Integer.parseInt(command[index]);
+							int g = Integer.parseInt(command[index]);
 							index++;
-							int b= Integer.parseInt(command[index]);
+							int b = Integer.parseInt(command[index]);
 							index++;
 							int upgrade = Integer.parseInt(command[index]);
 							index++;
+							Color c = new Color(r, g, b);
+							players.add(new tempPlayer(new Position(x, y),
+									new Color(r, g, b), upgrade));
+							System.out.println(c);
 						}
-					
-						
-						//TODO change the graphics based on this information
-						
-						
+						repaint(0);
+						// TODO change the graphics based on this information
 
 						break;
 
@@ -386,13 +427,19 @@ public class PlayerClient extends JFrame {
 					}
 				}
 			}
-			repaint(0);
+			// repaint(0);
 		}
 
 		// TODO make sure this works
 		@Override
 		public void mouseClicked(MouseEvent arg0) {
-			shoot = true;
+
+			// angle = Math.arctan((arg0.getPoint().y -
+			// height/2)/(arg0.getPoint().x-width/2));
+			// Ensure
+			System.out.println(time + "ssssssssssss");
+			if (time > reloadTime)
+				shoot = true;
 		}
 
 		@Override
@@ -406,5 +453,29 @@ public class PlayerClient extends JFrame {
 		@Override
 		public void mouseReleased(MouseEvent arg0) {
 		}
+	}
+}
+
+class tempPlayer {
+	private Position pos;
+	private Color c;
+	private int up;
+
+	tempPlayer(Position p, Color col, int upgrade) {
+		pos = p;
+		c = col;
+		up = upgrade;
+	}
+
+	public Position getPos() {
+		return pos;
+	}
+
+	public Color getColor() {
+		return c;
+	}
+
+	public int getUp() {
+		return up;
 	}
 }
