@@ -39,21 +39,23 @@ public class User extends JFrame {
 		private boolean titleScreen;
 		private JButton go;
 		private String name;
-		private Position pos;
+
+		private PhysicsThread physics;
+		boolean changing = false;
 
 		private int playerType;
-		private static Position speed;
-		private static Position accel;
-		private int maxSpeed;
+		private Position pos;
+		private static Vector speed;
+		private static Vector accel;
+		private static int maxSpeed;
 		private int maxAccel;
 		private int keysDown;
 		private ArrayList<Integer> directionsPressed;
 
 		GamePanel() {
 			titleScreen = true;
-			
+
 			// Begin game
-			
 
 			setLayout(new GridLayout(5, 5));
 			setUpTitle();
@@ -62,12 +64,17 @@ public class User extends JFrame {
 
 			pos = new Position(0, 0);
 			keysDown = 0;
-			accel = new Position(0,0);
+			speed = new Vector(0,0);
+			accel = new Vector(0, 0);
 			directionsPressed = new ArrayList<Integer>();
-			
-			new Thread(new ServerThread()).start();
-			new Thread(new PhysicsThread(accel, speed)).start();
-			
+
+			maxSpeed = 30;
+			maxAccel = 5;
+
+			//new Thread(new TimerThread()).start();
+			physics = new PhysicsThread(accel, speed, pos, maxSpeed);
+			new Thread(physics).start();
+
 			setPreferredSize(SCREEN);
 			addMouseListener(this);
 			addKeyListener(this);
@@ -143,6 +150,7 @@ public class User extends JFrame {
 											JOptionPane.ERROR_MESSAGE);
 						}
 					}
+					
 				}
 			});
 
@@ -184,6 +192,12 @@ public class User extends JFrame {
 					50, 50 };
 			int[] yPoints = { 100, 50, 50, 50, 50, 100, 200, 250, 250, 250,
 					250, 200 };
+			for(int x: xPoints){
+				x += -50 + pos.getX();
+			}
+			for(int y: yPoints){
+				y += -100 + pos.getY();
+			}
 			button = new GeneralPath(GeneralPath.WIND_EVEN_ODD, xPoints.length);
 			button.moveTo(xPoints[0], yPoints[0]);
 			int i = 0;
@@ -196,9 +210,9 @@ public class User extends JFrame {
 					yPoints[i + 1], xPoints[i + 2], yPoints[i + 2]);
 			button.closePath();
 			g2.fill(button);
-			System.out.println(button.contains(MouseInfo.getPointerInfo()
-					.getLocation().x,
-					MouseInfo.getPointerInfo().getLocation().y));
+			//System.out.println(button.contains(MouseInfo.getPointerInfo()
+			//		.getLocation().x,
+			//		MouseInfo.getPointerInfo().getLocation().y));
 			try {
 				Thread.sleep(30);
 			} catch (InterruptedException e) {
@@ -253,28 +267,26 @@ public class User extends JFrame {
 		public void keyPressed(KeyEvent e) {
 			System.out.println("key in user");
 			int key = e.getKeyCode();
-			//TODO this is wrong but i'll fix it
+			// TODO this is wrong but i'll fix it
 			/*
-			 * Have two variables to keep track of both keys.
-			 * Both pressed and released
-			 * Keep track of number of keys held down? counter
-			 * 
+			 * Have two variables to keep track of both keys. Both pressed and
+			 * released Keep track of number of keys held down? counter
 			 */
 			/*
-			if (key == KeyEvent.VK_UP && key == KeyEvent.VK_LEFT) {
-
-			} else if (key == KeyEvent.VK_UP && key == KeyEvent.VK_DOWN) {
-
-			} else if (key == KeyEvent.VK_UP && key == KeyEvent.VK_RIGHT) {
-
-			} else if (key == KeyEvent.VK_LEFT && key == KeyEvent.VK_DOWN) {
-
-			} else if (key == KeyEvent.VK_LEFT && key == KeyEvent.VK_RIGHT) {
-
-			} else if (key == KeyEvent.VK_DOWN && key == KeyEvent.VK_RIGHT) {
-
-			}
-			*/
+			 * if (key == KeyEvent.VK_UP && key == KeyEvent.VK_LEFT) {
+			 * 
+			 * } else if (key == KeyEvent.VK_UP && key == KeyEvent.VK_DOWN) {
+			 * 
+			 * } else if (key == KeyEvent.VK_UP && key == KeyEvent.VK_RIGHT) {
+			 * 
+			 * } else if (key == KeyEvent.VK_LEFT && key == KeyEvent.VK_DOWN) {
+			 * 
+			 * } else if (key == KeyEvent.VK_LEFT && key == KeyEvent.VK_RIGHT) {
+			 * 
+			 * } else if (key == KeyEvent.VK_DOWN && key == KeyEvent.VK_RIGHT) {
+			 * 
+			 * }
+			 */
 			// Single Directions
 			if (key == KeyEvent.VK_UP) {
 				keysDown++;
@@ -313,19 +325,19 @@ public class User extends JFrame {
 				keysDown--;
 				updateAccel();
 			}
-			directionsPressed.remove((Object)key);
+			directionsPressed.remove((Object) key);
 		}
-		
-		void updateAccel(){
+
+		void updateAccel() {
 			accel.setX(0);
 			accel.setY(0);
-			if(keysDown == 1){
-				switch(directionsPressed.get(0)){
+			if (keysDown == 1) {
+				switch (directionsPressed.get(0)) {
 				case KeyEvent.VK_UP:
-					accel.setY(maxAccel*-1);
+					accel.setY(maxAccel * -1);
 					break;
 				case KeyEvent.VK_LEFT:
-					accel.setX(maxAccel*-1);
+					accel.setX(maxAccel * -1);
 					break;
 				case KeyEvent.VK_DOWN:
 					accel.setY(maxAccel);
@@ -334,29 +346,35 @@ public class User extends JFrame {
 					accel.setX(maxAccel);
 					break;
 				}
-			}
-			else if(keysDown == 2){
-				int diagonal = (int)(maxAccel/Math.sqrt(2));
-				if (directionsPressed.contains(KeyEvent.VK_UP) && directionsPressed.contains(KeyEvent.VK_LEFT)) {
-					accel.setX(diagonal*-1);
-					accel.setY(diagonal*-1);
-				} else if (directionsPressed.contains(KeyEvent.VK_UP) && directionsPressed.contains(KeyEvent.VK_DOWN)) {
-					//Nothing
-				} else if (directionsPressed.contains(KeyEvent.VK_UP) && directionsPressed.contains(KeyEvent.VK_RIGHT)) {
+			} else if (keysDown == 2) {
+				int diagonal = (int) (maxAccel / Math.sqrt(2));
+				if (directionsPressed.contains(KeyEvent.VK_UP)
+						&& directionsPressed.contains(KeyEvent.VK_LEFT)) {
+					accel.setX(diagonal * -1);
+					accel.setY(diagonal * -1);
+				} else if (directionsPressed.contains(KeyEvent.VK_UP)
+						&& directionsPressed.contains(KeyEvent.VK_DOWN)) {
+					// Nothing
+				} else if (directionsPressed.contains(KeyEvent.VK_UP)
+						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
 					accel.setX(diagonal);
-					accel.setY(diagonal*-1);
-				} else if (directionsPressed.contains(KeyEvent.VK_LEFT) && directionsPressed.contains(KeyEvent.VK_DOWN)) {
-					accel.setX(diagonal*-1);
+					accel.setY(diagonal * -1);
+				} else if (directionsPressed.contains(KeyEvent.VK_LEFT)
+						&& directionsPressed.contains(KeyEvent.VK_DOWN)) {
+					accel.setX(diagonal * -1);
 					accel.setY(diagonal);
-				} else if (directionsPressed.contains(KeyEvent.VK_LEFT) && directionsPressed.contains(KeyEvent.VK_RIGHT)) {
-					//Nothing
-				} else if (directionsPressed.contains(KeyEvent.VK_DOWN) && directionsPressed.contains(KeyEvent.VK_RIGHT)) {
+				} else if (directionsPressed.contains(KeyEvent.VK_LEFT)
+						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
+					// Nothing
+				} else if (directionsPressed.contains(KeyEvent.VK_DOWN)
+						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
 					accel.setX(diagonal);
 					accel.setY(diagonal);
 				}
 			}
-			
-			PhysicsThread.changeDirection();
+
+			physics.changeDirection();
+			repaint(0);
 		}
 
 		@Override
@@ -365,34 +383,57 @@ public class User extends JFrame {
 
 	}
 
-	static class ServerThread implements Runnable {
-
-		ServerThread() {
-
-		}
-
-		public void run() {
-
-		}
-		
-	}
-
+//	static class ServerThread implements Runnable {
+//
+//		ServerThread() {
+//			new Thread(new TimerThread()).start();
+//		}
+//
+//		public void run() {
+//			
+//		}
+//
+//	}
+//	
+//	/**
+//	 * Keeps track of the time elapsed since a player's turn began
+//	 */
+//	static class TimerThread implements Runnable {
+//		public void run() {
+//			//long start = System.currentTimeMillis();
+//			while (true) {
+//				// Do not run the timer if it is not the player's turn
+//				///if (turn == false)
+//					//start = System.currentTimeMillis();
+//				// Keep track of the time elapsed in seconds
+//				///else {
+//					//time = (int) ((System.currentTimeMillis() - start) / 1000);
+//					game.repaint(0);
+//				//}
+//			}
+//		}
+//	}
+	
+	
 	// Physics thread?
-	static class PhysicsThread implements Runnable{
-		private Position accel, velocity, pos;
-		private static long currTime;
-		PhysicsThread(Position accel, Position velocity, Position position){
+	static class PhysicsThread implements Runnable {
+		private Vector accel, velocity;
+		private Position pos;
+		private long currTime, maxSpeed;
+
+		PhysicsThread(Vector accel, Vector velocity, Position position, int maxSpeed) {
 			this.accel = accel;
 			this.velocity = velocity;
 			this.pos = position;
+			this.maxSpeed = maxSpeed;
 		}
-		
-		public static void changeDirection(){
+
+		public void changeDirection() {
 			currTime = System.currentTimeMillis();
 		}
-		
-		public void run(){
-			while(true){
+
+		public void run() {
+			while (true) {
 				long t1 = System.currentTimeMillis();
 				try {
 					Thread.sleep(10);
@@ -401,13 +442,31 @@ public class User extends JFrame {
 					e.printStackTrace();
 				}
 				long t2 = System.currentTimeMillis();
-				int change = (int)(t2-t1);
-				velocity.setX((int)(velocity.getX() + accel.getX()*(change/1000.0)));
-				velocity.setY((int)(velocity.getY() + accel.getY()*(change/1000.0)));
+				int change = (int) (t2 - t1);
+				// TODO changing = true;
+				velocity.setX((int) (velocity.getX() + accel.getX()
+						* (change / 1000.0)));
+				velocity.setY((int) (velocity.getY() + accel.getY()
+						* (change / 1000.0)));
+				if (Math.sqrt(velocity.getX() * velocity.getX() + velocity.getY()
+						+ velocity.getY()) > maxSpeed) {
+					velocity.setX(maxSpeed*Math.cos(Math.atan(velocity.getY()/velocity.getX())));
+					velocity.setY(maxSpeed*Math.sin(Math.atan(velocity.getY()/velocity.getX())));
+				}
+
+				pos.setX((int) (pos.getX() + velocity.getX() * (change / 1000.0)));
+				pos.setY((int) (pos.getY() + velocity.getY() * (change / 1000.0)));
+				System.out.println(accel.getX() +" "+accel.getY());
 				
-				pos.setX((int)(pos.getX() + velocity.getX()*(change/1000.0)));
-				pos.setY((int)(pos.getY() + velocity.getY()*(change/1000.0)));
+				game.repaint();
+
+				// TODO changing = false;
+
+				// TODO CommunicationsThread in here send to server
+				// TODO Message queue (maybe send every other one?
 			}
 		}
 	}
 }
+
+
