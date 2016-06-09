@@ -14,20 +14,29 @@ public class Position {
 	public int getY() {
 		return y;
 	}
-	
-	public void increaseX(){
+
+	public void setY(int a) {
+		y = a;
+	}
+
+	public void setX(int a) {
+		x = a;
+	}
+
+	public void increaseX() {
 		x++;
 	}
-	public void increaseX(int increment)
-	{
-		x+= increment;
+
+	public void increaseX(int increment) {
+		x += increment;
 	}
-	
-	public void increaseY(){
+
+	public void increaseY() {
 		y++;
 	}
-	public void increaseY(int increment){
-		y+= increment;
+
+	public void increaseY(int increment) {
+		y += increment;
 	}
 
 }
