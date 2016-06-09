@@ -110,7 +110,8 @@ public class Server {
 					p.requestInfo();
 					if (p.shooting()) {
 						System.out.println("Shot fired");
-						bullets.add(new Bullet(p.getPos(), p.getID()));
+						bullets.add(new Bullet(p.getPos(), p.getID(),
+								new Vector(p.getUpgrade(), 1)));
 					} // TODO
 						// identify
 						// players
@@ -162,10 +163,25 @@ public class Server {
 		while (currentlyAccessing) {
 		}
 		currentlyAccessing = true;
-		for (Bullet currentBullet : bullets) {
-			if (Math.abs(currentBullet.getPos().getX() - p.getPos().getX()) <= 500
+		System.out.println(bullets.size());
+		for (int i = 0; i < bullets.size(); i++) {
+			Bullet currentBullet = bullets.get(i);
+			
+			long time = System.currentTimeMillis();
+			// Time bullets out here i guess
+			if (!currentBullet.alive() || time - currentBullet.time() > 2000000) {
+				i--;
+				bullets.remove(currentBullet);
+			}
+
+			// Do it all based on changes
+			if (Math.abs(currentBullet.getPos().getX()
+					+ (int) ((time - currentBullet.time())
+							* (currentBullet.xChange()) - p.getPos().getX())) <= 500
 					&& Math.abs(currentBullet.getPos().getY()
-							- p.getPos().getY()) <= 500) {
+							+ (int) ((time - currentBullet.time())
+									* (currentBullet.yChange()) - p.getPos()
+									.getY())) <= 500) {
 				// if (p.getSurroundingBullets().contains(currentBullet))
 				b.add(currentBullet);
 				// if (collision)
@@ -173,8 +189,6 @@ public class Server {
 			}
 		}
 		currentlyAccessing = false;
-
-		System.out.println("Done accessing bullets");
 
 		return b;
 	}

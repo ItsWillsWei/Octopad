@@ -92,8 +92,13 @@ public class Player {
 	public void updateSurroundings() {
 		pw.print("8 ");
 		pw.print(bullet.size() + " ");
-		for (Bullet bullet : bullet) {
-			pw.print(bullet.pos.getX() + " " + bullet.pos.getY() + " ");
+		long time = System.currentTimeMillis();
+		for (Bullet bull : bullet) {
+			pw.print((bull.getPos().getX() + (int) (bull.xChange()
+					* (time - bull.time()) / 10.0))
+					+ " "
+					+ (bull.getPos().getY() + (int) (bull.xChange()
+							* (time - bull.time()) / 10.0)) + " ");
 		}
 		pw.print(players.size() + " ");
 		for (Player player : players) {
@@ -187,7 +192,7 @@ public class Player {
 					shoot = command[3].equals("1"); // True or false
 					upgrade = Integer.parseInt(command[4]);
 					infoReceived = true;
-					if (shoot){
+					if (shoot) {
 						System.out
 								.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 					}

@@ -56,7 +56,7 @@ public class PlayerClient extends JFrame {
 		private static int port = 421;
 		private Position pos;
 		private int angle;
-		private int upgrade = 0;
+		private int upgrade = 3;
 		private boolean shoot = false;
 		private int reloadTime = 1000;
 		private int points = 0;
@@ -104,6 +104,7 @@ public class PlayerClient extends JFrame {
 		@Override
 		public void paintComponent(Graphics g) {
 			if (alive) {
+				System.out.println("Repainting" + bullet.size());
 				((Graphics2D) g).setRenderingHint(
 						RenderingHints.KEY_ANTIALIASING,
 						RenderingHints.VALUE_ANTIALIAS_ON);
