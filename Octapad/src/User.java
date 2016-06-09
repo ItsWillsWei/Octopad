@@ -64,14 +64,16 @@ public class User extends JFrame {
 
 			pos = new Position(0, 0);
 			keysDown = 0;
-			speed = new Vector(0,0);
+			speed = new Vector(0, 0);
 			accel = new Vector(0, 0);
 			directionsPressed = new ArrayList<Integer>();
 
-			maxSpeed = 30;
-			maxAccel = 5;
+			//Pixels per second
+			maxSpeed = 200;
+			//Pixels per second^2
+			maxAccel = 400;
 
-			//new Thread(new TimerThread()).start();
+			// new Thread(new TimerThread()).start();
 			physics = new PhysicsThread(accel, speed, pos, maxSpeed);
 			new Thread(physics).start();
 
@@ -150,7 +152,7 @@ public class User extends JFrame {
 											JOptionPane.ERROR_MESSAGE);
 						}
 					}
-					
+
 				}
 			});
 
@@ -192,10 +194,10 @@ public class User extends JFrame {
 					50, 50 };
 			int[] yPoints = { 100, 50, 50, 50, 50, 100, 200, 250, 250, 250,
 					250, 200 };
-			for(int x: xPoints){
+			for (int x : xPoints) {
 				x += -50 + pos.getX();
 			}
-			for(int y: yPoints){
+			for (int y : yPoints) {
 				y += -100 + pos.getY();
 			}
 			button = new GeneralPath(GeneralPath.WIND_EVEN_ODD, xPoints.length);
@@ -210,9 +212,9 @@ public class User extends JFrame {
 					yPoints[i + 1], xPoints[i + 2], yPoints[i + 2]);
 			button.closePath();
 			g2.fill(button);
-			//System.out.println(button.contains(MouseInfo.getPointerInfo()
-			//		.getLocation().x,
-			//		MouseInfo.getPointerInfo().getLocation().y));
+			// System.out.println(button.contains(MouseInfo.getPointerInfo()
+			// .getLocation().x,
+			// MouseInfo.getPointerInfo().getLocation().y));
 			try {
 				Thread.sleep(30);
 			} catch (InterruptedException e) {
@@ -288,22 +290,24 @@ public class User extends JFrame {
 			 * }
 			 */
 			// Single Directions
-			if (key == KeyEvent.VK_UP) {
-				keysDown++;
-				directionsPressed.add(key);
-				updateAccel();
-			} else if (key == KeyEvent.VK_LEFT) {
-				keysDown++;
-				directionsPressed.add(key);
-				updateAccel();
-			} else if (key == KeyEvent.VK_DOWN) {
-				keysDown++;
-				directionsPressed.add(key);
-				updateAccel();
-			} else if (key == KeyEvent.VK_RIGHT) {
-				keysDown++;
-				directionsPressed.add(key);
-				updateAccel();
+			if (!directionsPressed.contains(key)) {
+				if (key == KeyEvent.VK_UP) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				} else if (key == KeyEvent.VK_LEFT) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				} else if (key == KeyEvent.VK_DOWN) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				} else if (key == KeyEvent.VK_RIGHT) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				}
 			}
 
 		}
@@ -331,6 +335,7 @@ public class User extends JFrame {
 		void updateAccel() {
 			accel.setX(0);
 			accel.setY(0);
+			System.out.println(directionsPressed);
 			if (keysDown == 1) {
 				switch (directionsPressed.get(0)) {
 				case KeyEvent.VK_UP:
@@ -372,8 +377,6 @@ public class User extends JFrame {
 					accel.setY(diagonal);
 				}
 			}
-
-			physics.changeDirection();
 			repaint(0);
 		}
 
@@ -383,60 +386,61 @@ public class User extends JFrame {
 
 	}
 
-//	static class ServerThread implements Runnable {
-//
-//		ServerThread() {
-//			new Thread(new TimerThread()).start();
-//		}
-//
-//		public void run() {
-//			
-//		}
-//
-//	}
-//	
-//	/**
-//	 * Keeps track of the time elapsed since a player's turn began
-//	 */
-//	static class TimerThread implements Runnable {
-//		public void run() {
-//			//long start = System.currentTimeMillis();
-//			while (true) {
-//				// Do not run the timer if it is not the player's turn
-//				///if (turn == false)
-//					//start = System.currentTimeMillis();
-//				// Keep track of the time elapsed in seconds
-//				///else {
-//					//time = (int) ((System.currentTimeMillis() - start) / 1000);
-//					game.repaint(0);
-//				//}
-//			}
-//		}
-//	}
-	
-	
+	// static class ServerThread implements Runnable {
+	//
+	// ServerThread() {
+	// new Thread(new TimerThread()).start();
+	// }
+	//
+	// public void run() {
+	//
+	// }
+	//
+	// }
+	//
+	// /**
+	// * Keeps track of the time elapsed since a player's turn began
+	// */
+	// static class TimerThread implements Runnable {
+	// public void run() {
+	// //long start = System.currentTimeMillis();
+	// while (true) {
+	// // Do not run the timer if it is not the player's turn
+	// ///if (turn == false)
+	// //start = System.currentTimeMillis();
+	// // Keep track of the time elapsed in seconds
+	// ///else {
+	// //time = (int) ((System.currentTimeMillis() - start) / 1000);
+	// game.repaint(0);
+	// //}
+	// }
+	// }
+	// }
+
 	// Physics thread?
 	static class PhysicsThread implements Runnable {
-		private Vector accel, velocity;
+		private Vector accel, velocity, poso;
 		private Position pos;
 		private long currTime, maxSpeed;
 
-		PhysicsThread(Vector accel, Vector velocity, Position position, int maxSpeed) {
+		PhysicsThread(Vector accel, Vector velocity, Position position,
+				int maxSpeed) {
 			this.accel = accel;
 			this.velocity = velocity;
 			this.pos = position;
+			poso = new Vector(pos.getX(), pos.getY());
 			this.maxSpeed = maxSpeed;
 		}
 
-		public void changeDirection() {
-			currTime = System.currentTimeMillis();
-		}
+		//public void changeDirection() {
+		//	currTime = System.currentTimeMillis();
+		//}
 
 		public void run() {
 			while (true) {
 				long t1 = System.currentTimeMillis();
 				try {
-					Thread.sleep(10);
+					Thread.sleep(50);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -444,20 +448,47 @@ public class User extends JFrame {
 				long t2 = System.currentTimeMillis();
 				int change = (int) (t2 - t1);
 				// TODO changing = true;
-				velocity.setX((int) (velocity.getX() + accel.getX()
-						* (change / 1000.0)));
-				velocity.setY((int) (velocity.getY() + accel.getY()
-						* (change / 1000.0)));
-				if (Math.sqrt(velocity.getX() * velocity.getX() + velocity.getY()
-						+ velocity.getY()) > maxSpeed) {
-					velocity.setX(maxSpeed*Math.cos(Math.atan(velocity.getY()/velocity.getX())));
-					velocity.setY(maxSpeed*Math.sin(Math.atan(velocity.getY()/velocity.getX())));
-				}
-
-				pos.setX((int) (pos.getX() + velocity.getX() * (change / 1000.0)));
-				pos.setY((int) (pos.getY() + velocity.getY() * (change / 1000.0)));
-				System.out.println(accel.getX() +" "+accel.getY());
+				velocity.setX(0.95*(velocity.getX() + accel.getX()*(change / 1000.0)));
+				velocity.setY(0.95*(velocity.getY() + accel.getY()*(change / 1000.0)));
 				
+				if (Math.sqrt(velocity.getX() * velocity.getX()
+						+ velocity.getY() * velocity.getY()) > maxSpeed) {
+					velocity.setX((velocity.getX()  < 0? -1:1)*maxSpeed
+							* Math.cos(Math.atan(velocity.getY()
+									/ velocity.getX())));
+					velocity.setY((velocity.getX()  < 0? -1:1)*maxSpeed
+							* Math.sin(Math.atan(velocity.getY()
+									/ velocity.getX())));
+				}
+				
+//				
+//				if(velocity.getX() > 1)
+//					velocity.setX(velocity.getX() -1);
+//				else if(velocity.getX() > 0)
+//					velocity.setX(0);
+//				else if(velocity.getX() < -1)
+//					velocity.setX(velocity.getX() +1);
+//				else if(velocity.getX() > -1)
+//					velocity.setX(0);
+//				
+//				if(velocity.getY() > 1)
+//					velocity.setY(velocity.getY() -1);
+//				else if(velocity.getY() > 0)
+//					velocity.setY(0);
+//				else if(velocity.getY() < -1)
+//					velocity.setY(velocity.getY() +1);
+//				else if(velocity.getY() > -1)
+//					velocity.setY(0);
+//				
+				poso.setX( (pos.getX() + velocity.getX()
+						* (change/1000.0)));
+				poso.setY((pos.getY() + velocity.getY()
+						* (change/1000.0)));
+				System.out.println(accel.getX() + " " + accel.getY());
+				//System.out.println(velocity.getX() + " " + velocity.getY());
+				//System.out.println(pos.getX() + " " + pos.getY());
+				pos.setX((int)poso.getX());
+				pos.setY((int)poso.getY());
 				game.repaint();
 
 				// TODO changing = false;
@@ -468,5 +499,3 @@ public class User extends JFrame {
 		}
 	}
 }
-
-
