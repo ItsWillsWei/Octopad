@@ -17,6 +17,7 @@ public class Server {
 	private ArrayList<Player> players = new ArrayList<Player>();
 	private ArrayList<Thread> threads = new ArrayList<Thread>();
 	private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
+	private static boolean currentlyAccessing = false;
 
 	public static void main(String[] args) {
 		display = new Display();
@@ -49,7 +50,7 @@ public class Server {
 				Position current = new Position(
 						(int) (Math.random() * (WIDTH - 30)) + 20,
 						(int) (Math.random() * (HEIGHT - 30)) + 20);
-				while (intersectsAnything(current, 50))
+				while (!withinBounds(current, 50))
 					current = new Position(
 							(int) (Math.random() * (WIDTH - 30)) + 20,
 							(int) (Math.random() * (HEIGHT - 30)) + 20);
@@ -73,8 +74,8 @@ public class Server {
 	}
 
 	// TODO make this work
-	public boolean intersectsAnything(Position p, int radius) {
-		return !(p.getX() - radius > 0 && p.getX() + radius < WIDTH
+	public boolean withinBounds(Position p, int radius) {
+		return (p.getX() - radius > 0 && p.getX() + radius < WIDTH
 				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
 
@@ -86,7 +87,6 @@ public class Server {
 	 */
 	class PlayerThread implements Runnable {
 		Player p;
-		ArrayList<Bullet> nonconcurrentException = (ArrayList<Bullet>) bullets.clone();
 
 		public PlayerThread(Player player) {
 			p = player;
@@ -103,8 +103,7 @@ public class Server {
 			while (p.alive()) {
 				long startTime = System.nanoTime(); // start time plus 10 ms
 				// Update objects around it, trying to avoid lag
-				nonconcurrentException = (ArrayList<Bullet>) bullets.clone();;
-				p.setSurroundings((ArrayList<Player>)surroundingPlayers(p).clone(), (ArrayList<Bullet>)surroundingShots(p).clone());
+				p.setSurroundings(surroundingPlayers(p), surroundingShots(p));
 				p.updateSurroundings();
 				try {
 					Thread.sleep(100);
@@ -135,7 +134,7 @@ public class Server {
 			System.out.println("Player " + p.getID() + " is dead");
 			p.sendCommand("6");
 			// TODO delete someone graphically when they are dead
-			
+
 			// TODO remove a thread
 			for (Bullet b : bullets) {
 				if (b.getID() == p.getID())
@@ -146,7 +145,7 @@ public class Server {
 			threads.remove(remove);
 		}
 	}
- 
+
 	// TODO move this inside so that they won't try to access resources at the
 	// same time
 	/**
@@ -160,6 +159,9 @@ public class Server {
 		ArrayList<Bullet> b = new ArrayList<Bullet>();
 		System.out.println("accessing bullets atm");
 		// Some constant for the screen size
+		while (currentlyAccessing) {
+		}
+		currentlyAccessing = true;
 		for (Bullet currentBullet : bullets) {
 			if (Math.abs(currentBullet.getPos().getX() - p.getPos().getX()) <= 500
 					&& Math.abs(currentBullet.getPos().getY()
@@ -170,7 +172,8 @@ public class Server {
 				// decrement health, change course of bullet
 			}
 		}
-		
+		currentlyAccessing = false;
+
 		System.out.println("Done accessing bullets");
 
 		return b;
