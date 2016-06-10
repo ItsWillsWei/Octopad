@@ -51,6 +51,7 @@ public class PlayerClient extends JFrame {
 		private static PrintWriter pw;
 
 		Color c;
+		private static long start;
 		private boolean alive = true;
 		private static String ip = "localhost";
 		private static int port = 421;
@@ -104,7 +105,7 @@ public class PlayerClient extends JFrame {
 		@Override
 		public void paintComponent(Graphics g) {
 			if (alive) {
-				System.out.println("Repainting" + bullet.size());
+				// System.out.println("Repainting" + bullet.size());
 				((Graphics2D) g).setRenderingHint(
 						RenderingHints.KEY_ANTIALIASING,
 						RenderingHints.VALUE_ANTIALIAS_ON);
@@ -137,11 +138,13 @@ public class PlayerClient extends JFrame {
 		 */
 		class TimerThread implements Runnable {
 			public void run() {
-				long start = System.currentTimeMillis();
+				// Change to a static variable
+				start = System.currentTimeMillis();
 				while (true) {
 					// Do not run the timer if it is not the player's turn
 					if (shoot) {
 						start = System.currentTimeMillis();
+						System.out.println("restarting");
 					}
 					// Keep track of the time elapsed in seconds
 					else {
@@ -172,7 +175,7 @@ public class PlayerClient extends JFrame {
 							e.printStackTrace();
 						}
 					} while (command == null);
-					System.out.println(command[0]);
+					// System.out.println(command[0]);
 					switch (Integer.parseInt(command[0])) {
 					// PLace object
 					case 1:
@@ -212,7 +215,6 @@ public class PlayerClient extends JFrame {
 						break;
 					// Requesting information
 					case 7:
-						angle++;
 						if (shoot)
 							pw.println(pos.getX() + " " + pos.getY() + " "
 									+ angle + " 1 " + upgrade);
@@ -226,7 +228,7 @@ public class PlayerClient extends JFrame {
 						break;
 					// Sending any new objects
 					case 8:
-
+						ArrayList<Position> currBullet = new ArrayList<Position>();
 						// any bullets in the area
 						int index = 1;
 						int count = Integer.parseInt(command[index]);
@@ -236,8 +238,11 @@ public class PlayerClient extends JFrame {
 							index++;
 							int y = Integer.parseInt(command[index]);
 							index++;
-							bullet.add(new Position(x, y));
+							currBullet.add(new Position(x, y));
+							// System.out.println(x+" "+y);
 						}
+						// System.out.println(count+" "+bullet.size());
+						bullet = currBullet;
 						// GamePanel.this.repaint(0);
 						count = Integer.parseInt(command[index]);
 						index++;
@@ -273,17 +278,24 @@ public class PlayerClient extends JFrame {
 
 		@Override
 		public void mousePressed(MouseEvent arg0) {
+			// if (time > reloadTime)
+			// shoot = true;
 		}
 
 		// TODO make sure this works
 		@Override
 		public void mouseClicked(MouseEvent arg0) {
 
-			angle = (int) Math.atan((arg0.getPoint().y - HEIGHT / 2)
-					/ (arg0.getPoint().x - WIDTH / 2));
-			System.out.println(time + "ssssssssssss");
-			if (time > reloadTime)
+			angle = (int) (180 / Math.PI * Math.atan((pos.getY() - arg0
+					.getPoint().y * 1.0) / (arg0.getPoint().x - pos.getX())));
+			if (pos.getX() > arg0.getPoint().x)
+				angle = 180 + angle;
+			System.out.println(angle);
+			if (time > reloadTime) {
 				shoot = true;
+				start = System.currentTimeMillis();
+				time = 0;
+			}
 		}
 
 		@Override

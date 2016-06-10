@@ -45,6 +45,11 @@ public class Player {
 			e.printStackTrace();
 		}
 	}
+	
+	public int getAngle(){
+		System.out.println("angle is "+angle);
+		return angle;
+	}
 
 	public int getUpgrade() {
 		return upgrade;
@@ -90,15 +95,16 @@ public class Player {
 	}
 
 	public void updateSurroundings() {
+		// Removed /10
 		pw.print("8 ");
 		pw.print(bullet.size() + " ");
 		long time = System.currentTimeMillis();
 		for (Bullet bull : bullet) {
 			pw.print((bull.getPos().getX() + (int) (bull.xChange()
-					* (time - bull.time()) / 10.0))
+					* (time - bull.time())/10 ))
 					+ " "
-					+ (bull.getPos().getY() + (int) (bull.xChange()
-							* (time - bull.time()) / 10.0)) + " ");
+					+ (bull.getPos().getY() + (int) (bull.yChange()
+							* (time - bull.time())/10 )) + " ");
 		}
 		pw.print(players.size() + " ");
 		for (Player player : players) {
@@ -153,7 +159,7 @@ public class Player {
 		} else
 			activeCount++;
 
-		if (activeCount > 100) {
+		if (activeCount > 10000) {
 			alive = false;
 			System.out.println("Timed out too much");
 		}

@@ -106,15 +106,20 @@ public class Server {
 				p.setSurroundings(surroundingPlayers(p), surroundingShots(p));
 				p.updateSurroundings();
 				try {
-					Thread.sleep(100);
+					Thread.sleep(10);
 					p.requestInfo();
 					if (p.shooting()) {
 						System.out.println("Shot fired");
 						bullets.add(new Bullet(p.getPos(), p.getID(),
-								new Vector(p.getUpgrade(), 1)));
-					} // TODO
-						// identify
-						// players
+								new Vector(Math.cos(p.getAngle() * 1.0 / 180
+										* Math.PI), -1
+										* Math.sin(p.getAngle() * 1.0 / 180
+												* Math.PI))));
+						// System.out.println(bullets.get(bullets.size()-1).xChange()+" "+bullets.get(bullets.size()-1).yChange());
+					}
+					// System.out.println(bullets.size());// TODO
+					// identify
+					// players
 
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -166,27 +171,33 @@ public class Server {
 		System.out.println(bullets.size());
 		for (int i = 0; i < bullets.size(); i++) {
 			Bullet currentBullet = bullets.get(i);
-			
+
 			long time = System.currentTimeMillis();
 			// Time bullets out here i guess
-			if (!currentBullet.alive() || time - currentBullet.time() > 2000000) {
+			if (currentBullet.getPos().getX() > WIDTH
+					|| currentBullet.getPos().getY() > HEIGHT
+					|| currentBullet.getPos().getY() < 0
+					|| currentBullet.getPos().getX() < 0
+					|| !currentBullet.alive()
+					|| time - currentBullet.time() > 2000000) {
 				i--;
+				System.out.println("removing bullet");
 				bullets.remove(currentBullet);
 			}
 
 			// Do it all based on changes
 			if (Math.abs(currentBullet.getPos().getX()
-					+ (int) ((time - currentBullet.time())
-							* (currentBullet.xChange()) - p.getPos().getX())) <= 500
+					+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+							.xChange()) - p.getPos().getX()) <= 5000
 					&& Math.abs(currentBullet.getPos().getY()
-							+ (int) ((time - currentBullet.time())
-									* (currentBullet.yChange()) - p.getPos()
-									.getY())) <= 500) {
+							+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+									.yChange()) - p.getPos().getY()) <= 5000) {
 				// if (p.getSurroundingBullets().contains(currentBullet))
 				b.add(currentBullet);
 				// if (collision)
 				// decrement health, change course of bullet
-			}
+			} else
+				System.out.println("Too far away");
 		}
 		currentlyAccessing = false;
 
