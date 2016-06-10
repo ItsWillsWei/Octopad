@@ -40,6 +40,9 @@ public class Server {
 			serverSocket = new ServerSocket(421);
 			players = new ArrayList<Player>();
 			threads = new ArrayList<Thread>();
+
+			Thread t = new Thread(new BroadcastThread());
+			t.start();
 			while (true) {
 
 				System.out.println("Waiting for connection");
@@ -79,6 +82,21 @@ public class Server {
 				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
 
+	class BroadcastThread implements Runnable {
+
+		@Override
+		public void run() {
+			while (true) {
+				for(Player p: players){
+					
+					
+					
+					
+				}
+			}
+		}
+	}
+
 	/**
 	 * Keeps track of each player
 	 * 
@@ -98,37 +116,34 @@ public class Server {
 			p.sendCommand(p.getPos().getX() + " " + p.getPos().getY() + " "
 					+ p.getColour().getRed() + " " + p.getColour().getGreen()
 					+ " " + p.getColour().getBlue());
-
+			int counter = 0;
 			// Keep track while the player lives
 			while (p.alive()) {
-				long startTime = System.nanoTime(); // start time plus 10 ms
+				counter++;
+				long startTime = System.currentTimeMillis(); // start time plus
+																// 10 ms
 				// Update objects around it, trying to avoid lag
 				p.setSurroundings(surroundingPlayers(p), surroundingShots(p));
 				p.updateSurroundings();
 				try {
-					Thread.sleep(10);
+					Thread.sleep(30);
 					p.requestInfo();
 					if (p.shooting()) {
-						System.out.println("Shot fired");
 						bullets.add(new Bullet(p.getPos(), p.getID(),
 								new Vector(Math.cos(p.getAngle() * 1.0 / 180
 										* Math.PI), -1
 										* Math.sin(p.getAngle() * 1.0 / 180
 												* Math.PI))));
-						// System.out.println(bullets.get(bullets.size()-1).xChange()+" "+bullets.get(bullets.size()-1).yChange());
 					}
-					// System.out.println(bullets.size());// TODO
-					// identify
-					// players
 
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-				long endTime = System.nanoTime(); // end time
-				double elapsedTime = (endTime - startTime) / 1000000.0;
-				System.out.println(elapsedTime);
+				long endTime = System.currentTimeMillis(); // end time
+				if (counter % 500 == 0)
+					System.out.println(endTime - startTime);
 
 				// Checks to see if anything will damage the player and update
 				// health
@@ -163,12 +178,10 @@ public class Server {
 	// that way we don't have to worry about it later
 	public ArrayList<Bullet> surroundingShots(Player p) {
 		ArrayList<Bullet> b = new ArrayList<Bullet>();
-		System.out.println("accessing bullets atm");
 		// Some constant for the screen size
 		while (currentlyAccessing) {
 		}
 		currentlyAccessing = true;
-		System.out.println(bullets.size());
 		for (int i = 0; i < bullets.size(); i++) {
 			Bullet currentBullet = bullets.get(i);
 
@@ -179,11 +192,20 @@ public class Server {
 					|| currentBullet.getPos().getY() < 0
 					|| currentBullet.getPos().getX() < 0
 					|| !currentBullet.alive()
-					|| time - currentBullet.time() > 2000000) {
+					|| time - currentBullet.time() > 4000) {
 				i--;
-				System.out.println("removing bullet");
+				// System.out.println("removing bullet");
 				bullets.remove(currentBullet);
 			}
+			int bulletDmg = 10;
+			if (Math.abs(currentBullet.getPos().getX()
+					+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+							.xChange()) - p.getPos().getX()) <= 30
+					&& Math.abs(currentBullet.getPos().getY()
+							+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+									.yChange()) - p.getPos().getY()) <= 30
+					&& currentBullet.getID() != p.getID())
+				p.hit(bulletDmg);
 
 			// Do it all based on changes
 			if (Math.abs(currentBullet.getPos().getX()
@@ -196,8 +218,7 @@ public class Server {
 				b.add(currentBullet);
 				// if (collision)
 				// decrement health, change course of bullet
-			} else
-				System.out.println("Too far away");
+			}
 		}
 		currentlyAccessing = false;
 

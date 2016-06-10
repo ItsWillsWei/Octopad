@@ -20,8 +20,9 @@ public class Player {
 	private Position pos;
 	private Color color;
 	private PrintWriter pw;
+	private int health = 90;
 	private boolean alive = true;
-	private int timeOut = 5000;
+	private int timeOut = 20000;
 	private int angle;
 	private boolean shoot;
 	private int upgrade = 0;
@@ -45,9 +46,14 @@ public class Player {
 			e.printStackTrace();
 		}
 	}
-	
-	public int getAngle(){
-		System.out.println("angle is "+angle);
+
+	public void hit(int n) {
+		health -= n;
+		pw.println("3 " + health);
+	}
+
+	public int getAngle() {
+		//System.out.println("angle is " + angle);
 		return angle;
 	}
 
@@ -89,7 +95,7 @@ public class Player {
 	}
 
 	public void sendCommand(String command) {
-		System.out.println("send");
+		//System.out.println("send");
 		pw.println(command);
 		pw.flush();
 	}
@@ -101,10 +107,10 @@ public class Player {
 		long time = System.currentTimeMillis();
 		for (Bullet bull : bullet) {
 			pw.print((bull.getPos().getX() + (int) (bull.xChange()
-					* (time - bull.time())/10 ))
+					* (time - bull.time()) / 10))
 					+ " "
 					+ (bull.getPos().getY() + (int) (bull.yChange()
-							* (time - bull.time())/10 )) + " ");
+							* (time - bull.time()) / 10)) + " ");
 		}
 		pw.print(players.size() + " ");
 		for (Player player : players) {
@@ -198,13 +204,9 @@ public class Player {
 					shoot = command[3].equals("1"); // True or false
 					upgrade = Integer.parseInt(command[4]);
 					infoReceived = true;
-					if (shoot) {
-						System.out
-								.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-					}
-					System.out.println("Received: " + move.getX() + " "
-							+ move.getY() + " " + angle + " " + shoot + " "
-							+ upgrade);
+//					System.out.println("Received: " + move.getX() + " "
+//							+ move.getY() + " " + angle + " " + shoot + " "
+//							+ upgrade);
 				}
 			} catch (Exception e) {
 

@@ -51,6 +51,8 @@ public class PlayerClient extends JFrame {
 		private static PrintWriter pw;
 
 		Color c;
+		private int maxHealth = 100;
+		private int currHealth = 100;
 		private static long start;
 		private boolean alive = true;
 		private static String ip = "localhost";
@@ -59,7 +61,7 @@ public class PlayerClient extends JFrame {
 		private int angle;
 		private int upgrade = 3;
 		private boolean shoot = false;
-		private int reloadTime = 1000;
+		private int reloadTime = 300;
 		private int points = 0;
 		private ArrayList<Position> bullet = new ArrayList<Position>();
 		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
@@ -105,7 +107,6 @@ public class PlayerClient extends JFrame {
 		@Override
 		public void paintComponent(Graphics g) {
 			if (alive) {
-				// System.out.println("Repainting" + bullet.size());
 				((Graphics2D) g).setRenderingHint(
 						RenderingHints.KEY_ANTIALIASING,
 						RenderingHints.VALUE_ANTIALIAS_ON);
@@ -116,18 +117,29 @@ public class PlayerClient extends JFrame {
 				g.setColor(c);
 				g.fillOval(pos.getX() - 15, pos.getY() - 15, 30, 30);
 
-				// Bullets
-				g.setColor(Color.red);
-				for (Position p : bullet) {
-					// System.out.println("attempting to draw");
-					g.fillOval(p.getX() - 3, p.getY() - 3, 7, 7);
-				}
+				// Draw your health
+				g.setColor(Color.GREEN);
+				g.fillRect(pos.getX() - 15, pos.getY() - 30,
+						(int) (30 * (currHealth * 1.0 / maxHealth)), 8);
+				g.setColor(Color.RED);
+				g.fillRect(pos.getX() - 15
+						+ (int) (30 * (currHealth * 1.0 / maxHealth)),
+						pos.getY() - 30,
+						(int) (30 * ((maxHealth - currHealth) / maxHealth)), 8);
 
+				// Other players
 				for (tempPlayer p : players) {
 					g.setColor(p.getColor());
 					g.fillOval(p.getPos().getX() - 15, p.getPos().getY() - 15,
 							30, 30);
 				}
+
+				// Bullets
+				g.setColor(Color.red);
+				for (Position p : bullet) {
+					g.fillOval(p.getX() - 3, p.getY() - 3, 7, 7);
+				}
+
 			} else
 				this.setEnabled(false);
 
@@ -141,11 +153,11 @@ public class PlayerClient extends JFrame {
 				// Change to a static variable
 				start = System.currentTimeMillis();
 				while (true) {
+
 					// Do not run the timer if it is not the player's turn
-					if (shoot) {
+					if (shoot)
 						start = System.currentTimeMillis();
-						System.out.println("restarting");
-					}
+
 					// Keep track of the time elapsed in seconds
 					else {
 						time = (int) ((System.currentTimeMillis() - start));
@@ -154,7 +166,7 @@ public class PlayerClient extends JFrame {
 				}
 			}
 		}
-
+static int countr=0;
 		/**
 		 * Keeps track of the server's input
 		 */
@@ -167,7 +179,6 @@ public class PlayerClient extends JFrame {
 				while (true) {
 					// Read in the server's command (if any)
 					String[] command = null;
-
 					do {
 						try {
 							command = br.readLine().split(" ");
@@ -193,7 +204,7 @@ public class PlayerClient extends JFrame {
 						break;
 					// Update health
 					case 3:
-						int health = Integer.parseInt(command[1]);
+						currHealth = Integer.parseInt(command[1]);
 						GamePanel.this.repaint(0);
 						break;
 					// Request upgrade
@@ -224,11 +235,10 @@ public class PlayerClient extends JFrame {
 						pw.flush();
 						shoot = false;
 						GamePanel.this.repaint(0);
-						// System.exit(0);
 						break;
 					// Sending any new objects
 					case 8:
-						ArrayList<Position> currBullet = new ArrayList<Position>();
+						ArrayList<Position> currBullets = new ArrayList<Position>();
 						// any bullets in the area
 						int index = 1;
 						int count = Integer.parseInt(command[index]);
@@ -238,15 +248,15 @@ public class PlayerClient extends JFrame {
 							index++;
 							int y = Integer.parseInt(command[index]);
 							index++;
-							currBullet.add(new Position(x, y));
-							// System.out.println(x+" "+y);
+							currBullets.add(new Position(x, y));
+
 						}
-						// System.out.println(count+" "+bullet.size());
-						bullet = currBullet;
+						bullet = currBullets;
 						// GamePanel.this.repaint(0);
 						count = Integer.parseInt(command[index]);
 						index++;
 
+						ArrayList<tempPlayer> currPlayers = new ArrayList<tempPlayer>();
 						// sending all players in your area
 						for (int i = 0; i < count; i++) {
 							int x = Integer.parseInt(command[index]);
@@ -261,12 +271,13 @@ public class PlayerClient extends JFrame {
 							index++;
 							int upgrade = Integer.parseInt(command[index]);
 							index++;
-							Color c = new Color(r, g, b);
-							players.add(new tempPlayer(new Position(x, y),
+							currPlayers.add(new tempPlayer(new Position(x, y),
 									new Color(r, g, b), upgrade));
-							System.out.println(c);
 						}
+						players = currPlayers;
 						repaint(0);
+						countr++;
+						System.out.println("updated doe "+countr);
 						// TODO change the graphics based on this information
 
 						break;
@@ -293,8 +304,8 @@ public class PlayerClient extends JFrame {
 			System.out.println(angle);
 			if (time > reloadTime) {
 				shoot = true;
-				start = System.currentTimeMillis();
-				time = 0;
+				// start = System.currentTimeMillis();
+				// time = 0;
 			}
 		}
 
