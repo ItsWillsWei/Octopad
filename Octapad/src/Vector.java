@@ -22,4 +22,8 @@ public class Vector {
 	public void setY(double a) {
 		y = a;
 	}
+	
+	double getMagnitude(){
+		return Math.sqrt(x*x+y*y);
+	}
 }

@@ -35,6 +35,7 @@ public class User extends JFrame {
 		private KButton goButton;
 		private KInputPanel nameInput, ipInput, portInput;
 		private static final Dimension SCREEN = new Dimension(1024, 768);
+		private static final Position CENTER = new Position((int)SCREEN.getWidth()/2, (int)SCREEN.getHeight()/2);
 
 		private boolean titleScreen;
 		private JButton go;
@@ -45,6 +46,8 @@ public class User extends JFrame {
 
 		private int playerType;
 		private Position pos;
+		//private Position movingCenter;
+		
 		private static Vector speed;
 		private static Vector accel;
 		private static int maxSpeed;
@@ -63,15 +66,16 @@ public class User extends JFrame {
 			repaint(0);
 
 			pos = new Position(0, 0);
+			//movingCenter =new Position(pos.getX(), pos.getY());
 			keysDown = 0;
 			speed = new Vector(0, 0);
 			accel = new Vector(0, 0);
 			directionsPressed = new ArrayList<Integer>();
 
-			//Pixels per second
+			// Pixels per second
 			maxSpeed = 200;
-			//Pixels per second^2
-			maxAccel = 400;
+			// Pixels per second^2
+			maxAccel = 500;
 
 			// new Thread(new TimerThread()).start();
 			physics = new PhysicsThread(accel, speed, pos, maxSpeed);
@@ -187,19 +191,79 @@ public class User extends JFrame {
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 
-			g.drawRect(pos.getX(), pos.getY(), 10, 10);
+			int playerWidth = 10;
+			int playerHeight = 10;
+			
+			double velocityRatio = speed.getMagnitude()/maxSpeed;
+			int centerX = getWidth() / 2 - playerWidth / 2;
+			int centerY = getHeight() / 2 - playerHeight / 2;
+			int displayX = (int)(centerX + 50*speed.getX()/maxSpeed);
+			int displayY = (int) (centerY + 50*speed.getY()/maxSpeed);
+//			int displayX = (int) (getWidth() / 2 - playerWidth / 2 + (pos.getX()));
+//			int displayY = (int) (getHeight() / 2 - playerHeight / 2 + (pos.getY()));
+
+			Vector centerDistance = new Vector(displayX-(CENTER.getX()-playerWidth), displayY-(CENTER.getY()-playerHeight));
+			Vector correct = new Vector(0,0);
+			
+			correct.setX((speed.getX() < 0 ? -1 : 1)
+					* maxSpeed
+					* Math.cos(Math.atan(speed.getY()
+							/ speed.getX())));
+			correct.setY((speed.getX() < 0 ? -1 : 1)
+					* 50* velocityRatio
+					* Math.sin(Math.atan(speed.getY()
+							/ speed.getX())));
+			
+//			if(speed.getMagnitude()/maxSpeed < centerDistance.getMagnitude()/50){
+//				displayX = (int) (getWidth() / 2 - playerWidth / 2 + (pos.getX()));
+//				displayY = (int) (getHeight() / 2 - playerHeight / 2 + (pos.getY()));
+//			}
+//			else{
+//				
+//			}
+//			
+			// Draws player
+			g.drawRect(displayX, displayY, playerWidth, playerHeight);
+
 			Graphics2D g2 = (Graphics2D) g;
-			g.fillRect(5, 6, 7, 8);
+
 			int[] xPoints = { 50, 50, 100, 200, 250, 250, 250, 250, 200, 100,
 					50, 50 };
 			int[] yPoints = { 100, 50, 50, 50, 50, 100, 200, 250, 250, 250,
 					250, 200 };
-			for (int x : xPoints) {
-				x += -50 + pos.getX();
+			
+			
+//			movingCenter.setX((int)(movingCenter.getX() + (displayX - (CENTER.getX()-playerWidth/2))*(1-velocityRatio)));
+//			movingCenter.setY((int)(movingCenter.getY() + (displayY - (CENTER.getY()-playerHeight/2))*(1-velocityRatio)));
+			
+			for (int i = 0; i < xPoints.length; i++) {
+				xPoints[i] = xPoints[i] - pos.getX() + displayX;// xPoints[i] -
+																// pos.getX()+
+																// 50 -
+																// playerDisp.getX()/2;
 			}
-			for (int y : yPoints) {
-				y += -100 + pos.getY();
+			for (int i = 0; i < xPoints.length; i++) {
+				yPoints[i] = yPoints[i] - pos.getY() + displayY;// yPoints[i] -
+																// pos.getY()+
+																// 50 -
+																// playerDisp.getY()/2;
 			}
+			
+			g.fillRect(32 - pos.getX() + displayX, 46 - pos.getY() + displayY,
+					55, 10);
+			g.fillRect(346 - pos.getX() + displayX,
+					689 - pos.getY() + displayY, 7, 8);
+			g.setColor(Color.RED);
+			g.fillOval(400 - pos.getX() + displayX,
+					400 - pos.getY() + displayY, 100, 100);
+			
+//			g.fillRect(32 - movingCenter.getX() + displayX, 46 - movingCenter.getY() + displayY,
+//					55, 10);
+//			g.fillRect(346 - movingCenter.getX() + displayX,
+//					689 - movingCenter.getY() + displayY, 7, 8);
+//			g.setColor(Color.RED);
+//			g.fillOval(400 - movingCenter.getX() + displayX,
+//					400 - movingCenter.getY() + displayY, 100, 100);
 			button = new GeneralPath(GeneralPath.WIND_EVEN_ODD, xPoints.length);
 			button.moveTo(xPoints[0], yPoints[0]);
 			int i = 0;
@@ -269,26 +333,7 @@ public class User extends JFrame {
 		public void keyPressed(KeyEvent e) {
 			System.out.println("key in user");
 			int key = e.getKeyCode();
-			// TODO this is wrong but i'll fix it
-			/*
-			 * Have two variables to keep track of both keys. Both pressed and
-			 * released Keep track of number of keys held down? counter
-			 */
-			/*
-			 * if (key == KeyEvent.VK_UP && key == KeyEvent.VK_LEFT) {
-			 * 
-			 * } else if (key == KeyEvent.VK_UP && key == KeyEvent.VK_DOWN) {
-			 * 
-			 * } else if (key == KeyEvent.VK_UP && key == KeyEvent.VK_RIGHT) {
-			 * 
-			 * } else if (key == KeyEvent.VK_LEFT && key == KeyEvent.VK_DOWN) {
-			 * 
-			 * } else if (key == KeyEvent.VK_LEFT && key == KeyEvent.VK_RIGHT) {
-			 * 
-			 * } else if (key == KeyEvent.VK_DOWN && key == KeyEvent.VK_RIGHT) {
-			 * 
-			 * }
-			 */
+
 			// Single Directions
 			if (!directionsPressed.contains(key)) {
 				if (key == KeyEvent.VK_UP) {
@@ -318,18 +363,21 @@ public class User extends JFrame {
 			int key = e.getKeyCode();
 			if (key == KeyEvent.VK_UP) {
 				keysDown--;
+				directionsPressed.remove((Object) key);
 				updateAccel();
 			} else if (key == KeyEvent.VK_LEFT) {
 				keysDown--;
+				directionsPressed.remove((Object) key);
 				updateAccel();
 			} else if (key == KeyEvent.VK_DOWN) {
 				keysDown--;
+				directionsPressed.remove((Object) key);
 				updateAccel();
 			} else if (key == KeyEvent.VK_RIGHT) {
 				keysDown--;
+				directionsPressed.remove((Object) key);
 				updateAccel();
 			}
-			directionsPressed.remove((Object) key);
 		}
 
 		void updateAccel() {
@@ -432,15 +480,30 @@ public class User extends JFrame {
 			this.maxSpeed = maxSpeed;
 		}
 
-		//public void changeDirection() {
-		//	currTime = System.currentTimeMillis();
-		//}
+		// public void changeDirection() {
+		// currTime = System.currentTimeMillis();
+		// }
+		
+		
+		
+		
+		
+		Vector getVelocityRatio() {
+			Vector ratio = new Vector(0, 0);
+			double vx = velocity.getX();
+			double vy = velocity.getY();
+
+			ratio.setX(vx / maxSpeed);
+			ratio.setY(vy / maxSpeed);
+
+			return ratio;
+		}
 
 		public void run() {
 			while (true) {
 				long t1 = System.currentTimeMillis();
 				try {
-					Thread.sleep(50);
+					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -448,47 +511,32 @@ public class User extends JFrame {
 				long t2 = System.currentTimeMillis();
 				int change = (int) (t2 - t1);
 				// TODO changing = true;
-				velocity.setX(0.95*(velocity.getX() + accel.getX()*(change / 1000.0)));
-				velocity.setY(0.95*(velocity.getY() + accel.getY()*(change / 1000.0)));
-				
-				if (Math.sqrt(velocity.getX() * velocity.getX()
-						+ velocity.getY() * velocity.getY()) > maxSpeed) {
-					velocity.setX((velocity.getX()  < 0? -1:1)*maxSpeed
+				// (velocity.getMagnitude() < maxSpeed/2?
+				// accel.getX()/2:accel.getX())
+				velocity.setX(.96 * (velocity.getX() + accel.getX()
+						* (change / 1000.0)));
+
+				velocity.setY(.96 * (velocity.getY() + accel.getY()
+						* (change / 1000.0)));
+
+				if (velocity.getMagnitude() > maxSpeed) {
+					velocity.setX((velocity.getX() < 0 ? -1 : 1)
+							* maxSpeed
 							* Math.cos(Math.atan(velocity.getY()
 									/ velocity.getX())));
-					velocity.setY((velocity.getX()  < 0? -1:1)*maxSpeed
+					velocity.setY((velocity.getX() < 0 ? -1 : 1)
+							* maxSpeed
 							* Math.sin(Math.atan(velocity.getY()
 									/ velocity.getX())));
 				}
-				
-//				
-//				if(velocity.getX() > 1)
-//					velocity.setX(velocity.getX() -1);
-//				else if(velocity.getX() > 0)
-//					velocity.setX(0);
-//				else if(velocity.getX() < -1)
-//					velocity.setX(velocity.getX() +1);
-//				else if(velocity.getX() > -1)
-//					velocity.setX(0);
-//				
-//				if(velocity.getY() > 1)
-//					velocity.setY(velocity.getY() -1);
-//				else if(velocity.getY() > 0)
-//					velocity.setY(0);
-//				else if(velocity.getY() < -1)
-//					velocity.setY(velocity.getY() +1);
-//				else if(velocity.getY() > -1)
-//					velocity.setY(0);
-//				
-				poso.setX( (pos.getX() + velocity.getX()
-						* (change/1000.0)));
-				poso.setY((pos.getY() + velocity.getY()
-						* (change/1000.0)));
-				System.out.println(accel.getX() + " " + accel.getY());
-				//System.out.println(velocity.getX() + " " + velocity.getY());
-				//System.out.println(pos.getX() + " " + pos.getY());
-				pos.setX((int)poso.getX());
-				pos.setY((int)poso.getY());
+
+				poso.setX((pos.getX() + velocity.getX() * (change / 1000.0)));
+				poso.setY((pos.getY() + velocity.getY() * (change / 1000.0)));
+				// System.out.println(accel.getX() + " " + accel.getY());
+				System.out.println(velocity.getX() + " " + velocity.getY());
+				// System.out.println(pos.getX() + " " + pos.getY());
+				pos.setX((int) Math.round(poso.getX()));
+				pos.setY((int) Math.round(poso.getY()));
 				game.repaint();
 
 				// TODO changing = false;
