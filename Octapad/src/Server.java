@@ -42,12 +42,14 @@ public class Server {
 			threads = new ArrayList<Thread>();
 
 			Thread t = new Thread(new BroadcastThread());
+			t.setPriority(Thread.MAX_PRIORITY);
 			t.start();
 			while (true) {
 
 				System.out.println("Waiting for connection");
 				// Connect new players
 				client = serverSocket.accept();
+
 				noOfPlayers++;
 				System.out.printf("Client #%d connected!%n", noOfPlayers);
 				Position current = new Position(
@@ -57,12 +59,19 @@ public class Server {
 					current = new Position(
 							(int) (Math.random() * (WIDTH - 30)) + 20,
 							(int) (Math.random() * (HEIGHT - 30)) + 20);
+				currentlyAccessing = true;
 				currentPlayer = new Player(client, current, noOfPlayers);
 				players.add(currentPlayer);
-				currentThread = new Thread(new PlayerThread(currentPlayer));
-				threads.add(currentThread);
-				currentThread.start();
-
+				// Initial position and colour
+				currentPlayer.sendCommand(currentPlayer.getPos().getX() + " "
+						+ currentPlayer.getPos().getY() + " "
+						+ currentPlayer.getColour().getRed() + " "
+						+ currentPlayer.getColour().getGreen() + " "
+						+ currentPlayer.getColour().getBlue());
+				// currentThread = new Thread(new PlayerThread(currentPlayer));
+				// threads.add(currentThread);
+				// currentThread.start();
+				currentlyAccessing = false;
 				// Be nice to the JVM
 				Thread.sleep(1000);
 			}
@@ -87,11 +96,46 @@ public class Server {
 		@Override
 		public void run() {
 			while (true) {
-				for(Player p: players){
-					
-					
-					
-					
+				
+				for (int i = 0; i < players.size(); i++) {
+					Player p = players.get(i);
+					if (currentlyAccessing)
+						break;
+
+					if (!p.alive()) {// Tell them they are dead
+						System.out.println("Player " + p.getID() + " is dead");
+						p.sendCommand("6");
+						// TODO delete someone graphically when they are dead
+
+						// TODO remove a thread
+						for (Bullet b : bullets) {
+							if (b.getID() == p.getID())
+								bullets.remove(b);
+						}
+						int remove = players.indexOf(p);
+						i = 0;
+						players.remove(remove);
+					}
+
+					p.setSurroundings(surroundingPlayers(p),
+							surroundingShots(p));
+					p.updateSurroundings();
+					try {
+						Thread.sleep(2);
+						p.requestInfo();
+						if (p.shooting()) {
+							bullets.add(new Bullet(p.getPos(), p.getID(),
+									new Vector(Math.cos(p.getAngle() * 1.0
+											/ 180 * Math.PI), -1
+											* Math.sin(p.getAngle() * 1.0 / 180
+													* Math.PI))));
+						}
+
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
 				}
 			}
 		}

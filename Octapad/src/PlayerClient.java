@@ -21,6 +21,7 @@ public class PlayerClient extends JFrame {
 	// Final variables for the pane
 	private int WIDTH = 1024;
 	private int HEIGHT = 700;
+	private final static int HEALTH_HEIGHT = 5;
 	private static GamePanel game;
 
 	/**
@@ -120,12 +121,14 @@ public class PlayerClient extends JFrame {
 				// Draw your health
 				g.setColor(Color.GREEN);
 				g.fillRect(pos.getX() - 15, pos.getY() - 30,
-						(int) (30 * (currHealth * 1.0 / maxHealth)), 8);
+						(int) (30 * (currHealth * 1.0 / maxHealth)),
+						HEALTH_HEIGHT);
 				g.setColor(Color.RED);
 				g.fillRect(pos.getX() - 15
 						+ (int) (30 * (currHealth * 1.0 / maxHealth)),
 						pos.getY() - 30,
-						(int) (30 * ((maxHealth - currHealth) / maxHealth)), 8);
+						(int) (30 * ((maxHealth - currHealth) / maxHealth)),
+						HEALTH_HEIGHT);
 
 				// Other players
 				for (tempPlayer p : players) {
@@ -166,7 +169,7 @@ public class PlayerClient extends JFrame {
 				}
 			}
 		}
-static int countr=0;
+
 		/**
 		 * Keeps track of the server's input
 		 */
@@ -252,7 +255,6 @@ static int countr=0;
 
 						}
 						bullet = currBullets;
-						// GamePanel.this.repaint(0);
 						count = Integer.parseInt(command[index]);
 						index++;
 
@@ -276,8 +278,6 @@ static int countr=0;
 						}
 						players = currPlayers;
 						repaint(0);
-						countr++;
-						System.out.println("updated doe "+countr);
 						// TODO change the graphics based on this information
 
 						break;
@@ -301,7 +301,6 @@ static int countr=0;
 					.getPoint().y * 1.0) / (arg0.getPoint().x - pos.getX())));
 			if (pos.getX() > arg0.getPoint().x)
 				angle = 180 + angle;
-			System.out.println(angle);
 			if (time > reloadTime) {
 				shoot = true;
 				// start = System.currentTimeMillis();
@@ -326,12 +325,12 @@ static int countr=0;
 class tempPlayer {
 	private Position pos;
 	private Color c;
-	private int up;
+	private int upgrade;
 
 	tempPlayer(Position p, Color col, int upgrade) {
 		pos = p;
 		c = col;
-		up = upgrade;
+		this.upgrade = upgrade;
 	}
 
 	public Position getPos() {
@@ -342,7 +341,7 @@ class tempPlayer {
 		return c;
 	}
 
-	public int getUp() {
-		return up;
+	public int getUpgrade() {
+		return upgrade;
 	}
 }
