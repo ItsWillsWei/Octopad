@@ -45,7 +45,7 @@ public class User extends JFrame {
 		boolean changing = false;
 
 		private int playerType;
-		private Position pos;
+		private Position pos, player;
 		//private Position movingCenter;
 		
 		private static Vector speed;
@@ -54,7 +54,7 @@ public class User extends JFrame {
 		private int maxAccel;
 		private int keysDown;
 		private ArrayList<Integer> directionsPressed;
-
+		Integer angle;
 		GamePanel() {
 			titleScreen = true;
 
@@ -76,9 +76,10 @@ public class User extends JFrame {
 			maxSpeed = 200;
 			// Pixels per second^2
 			maxAccel = 500;
-
+			player = new Position(0,0);
+			angle = new Integer(0);
 			// new Thread(new TimerThread()).start();
-			physics = new PhysicsThread(accel, speed, pos, maxSpeed);
+			physics = new PhysicsThread(accel, speed, pos, maxSpeed, angle, player);
 			new Thread(physics).start();
 
 			setPreferredSize(SCREEN);
@@ -128,12 +129,12 @@ public class User extends JFrame {
 				public void actionPerformed(ActionEvent e) {
 					System.out.println("Joining server");
 					// Connects to the server
-					boolean errorConnecting = false;
+					boolean errorConnecting = true;
 					try {
 						name = nameInput.getInput();
-						String ip = ipInput.getInput();
-						int port = Integer.parseInt(portInput.getInput());
-						socket = new Socket(ip, port);
+						//String ip = ipInput.getInput();
+						//int port = Integer.parseInt(portInput.getInput());
+						socket = new Socket("localhost", 421);
 						in = socket.getInputStream();
 						out = socket.getOutputStream();
 					} catch (Exception execpt) {
@@ -194,7 +195,6 @@ public class User extends JFrame {
 			int playerWidth = 10;
 			int playerHeight = 10;
 			
-			double velocityRatio = speed.getMagnitude()/maxSpeed;
 			int centerX = getWidth() / 2 - playerWidth / 2;
 			int centerY = getHeight() / 2 - playerHeight / 2;
 			int displayX = (int)(centerX + 50*speed.getX()/maxSpeed);
@@ -202,17 +202,15 @@ public class User extends JFrame {
 //			int displayX = (int) (getWidth() / 2 - playerWidth / 2 + (pos.getX()));
 //			int displayY = (int) (getHeight() / 2 - playerHeight / 2 + (pos.getY()));
 
-			Vector centerDistance = new Vector(displayX-(CENTER.getX()-playerWidth), displayY-(CENTER.getY()-playerHeight));
-			Vector correct = new Vector(0,0);
 			
-			correct.setX((speed.getX() < 0 ? -1 : 1)
-					* maxSpeed
-					* Math.cos(Math.atan(speed.getY()
-							/ speed.getX())));
-			correct.setY((speed.getX() < 0 ? -1 : 1)
-					* 50* velocityRatio
-					* Math.sin(Math.atan(speed.getY()
-							/ speed.getX())));
+//			double x = (game.getMousePosition().y - player.getY()*1.0)/(game.getMousePosition().x-player.getX());
+//			angle = ((int)(180/Math.PI * Math.atan(x)));
+//			//System.out.println(angle);
+//			if(game.getMousePosition().x < player.getX())
+//				angle += 180;
+//			else if(game.getMousePosition().y < player.getY())
+//				angle+=360;
+			
 			
 //			if(speed.getMagnitude()/maxSpeed < centerDistance.getMagnitude()/50){
 //				displayX = (int) (getWidth() / 2 - playerWidth / 2 + (pos.getX()));
@@ -223,31 +221,44 @@ public class User extends JFrame {
 //			}
 //			
 			// Draws player
-			g.drawRect(displayX, displayY, playerWidth, playerHeight);
+			g.drawRect(-30 - pos.getX() + displayX, -30 - pos.getY() + displayY, playerWidth, playerHeight);
 
 			Graphics2D g2 = (Graphics2D) g;
 
 			int[] xPoints = { 50, 50, 100, 200, 250, 250, 250, 250, 200, 100,
 					50, 50 };
-			int[] yPoints = { 100, 50, 50, 50, 50, 100, 200, 250, 250, 250,
+			int[] yPoints = { 100, 50, 50, 50, 90, 100, 200, 250, 250, 250,
 					250, 200 };
 			
-			
+//			player.setX((short)xPoints[0]);
+//			player.setY((short)yPoints[0]);
 //			movingCenter.setX((int)(movingCenter.getX() + (displayX - (CENTER.getX()-playerWidth/2))*(1-velocityRatio)));
 //			movingCenter.setY((int)(movingCenter.getY() + (displayY - (CENTER.getY()-playerHeight/2))*(1-velocityRatio)));
 			
 			for (int i = 0; i < xPoints.length; i++) {
-				xPoints[i] = xPoints[i] - pos.getX() + displayX;// xPoints[i] -
+				xPoints[i] = xPoints[i] + displayX;// xPoints[i] -
 																// pos.getX()+
 																// 50 -
 																// playerDisp.getX()/2;
+				yPoints[i] = yPoints[i] + displayY;
+				
+				if(i==0){
+					player.setX((short)xPoints[0]);
+					player.setY((short)yPoints[0]);
+				}
+				
+				double x1 = xPoints[i] - player.getX();
+				double y1 = yPoints[i] - player.getY();
+
+				double x2 = x1 * Math.cos(angle*Math.PI/180) - y1 * Math.sin(angle*Math.PI/180);
+				double y2 = x1 * Math.sin(angle*Math.PI/180) + y1 * Math.cos(angle*Math.PI/180);
+
+				xPoints[i] = (int)(x2 + player.getX());
+				yPoints[i] = (int)(y2 + player.getY());
+				g.fillOval(xPoints[i], yPoints[i], 5, 5);
 			}
-			for (int i = 0; i < xPoints.length; i++) {
-				yPoints[i] = yPoints[i] - pos.getY() + displayY;// yPoints[i] -
-																// pos.getY()+
-																// 50 -
-																// playerDisp.getY()/2;
-			}
+			
+			
 			
 			g.fillRect(32 - pos.getX() + displayX, 46 - pos.getY() + displayY,
 					55, 10);
@@ -285,7 +296,14 @@ public class User extends JFrame {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			// repaint(0);
+			
+			
+			
+			//System.out.println(angle);
+//			System.out.println(player.getX() + " " + player.getY());
+//			System.out.println("               " + getMousePosition().x + " " + getMousePosition().y);
+//			System.out.println(angle);
+			 repaint(0);
 		}
 
 		@Override
@@ -468,16 +486,19 @@ public class User extends JFrame {
 	// Physics thread?
 	static class PhysicsThread implements Runnable {
 		private Vector accel, velocity, poso;
-		private Position pos;
+		private Position pos, player;
 		private long currTime, maxSpeed;
-
+		
+		Integer angle;
 		PhysicsThread(Vector accel, Vector velocity, Position position,
-				int maxSpeed) {
+				int maxSpeed, Integer angle, Position player) {
 			this.accel = accel;
 			this.velocity = velocity;
 			this.pos = position;
 			poso = new Vector(pos.getX(), pos.getY());
 			this.maxSpeed = maxSpeed;
+			this.angle = angle;
+			this.player = player;
 		}
 
 		// public void changeDirection() {
@@ -533,12 +554,22 @@ public class User extends JFrame {
 				poso.setX((pos.getX() + velocity.getX() * (change / 1000.0)));
 				poso.setY((pos.getY() + velocity.getY() * (change / 1000.0)));
 				// System.out.println(accel.getX() + " " + accel.getY());
-				System.out.println(velocity.getX() + " " + velocity.getY());
+				//System.out.println(velocity.getX() + " " + velocity.getY());
 				// System.out.println(pos.getX() + " " + pos.getY());
-				pos.setX((int) Math.round(poso.getX()));
-				pos.setY((int) Math.round(poso.getY()));
+				pos.setX((short) Math.round(poso.getX()));
+				pos.setY((short) Math.round(poso.getY()));
 				game.repaint();
-
+				try{
+				double x = (game.getMousePosition().y - player.getY()*1.0)/(game.getMousePosition().x-player.getX());
+				angle = ((int)(180/Math.PI * Math.atan(x)));
+				//System.out.println(angle);
+				if(game.getMousePosition().x < player.getX())
+					angle += 180;
+				else if(game.getMousePosition().y < player.getY())
+					angle+=360;
+				}catch(Exception e){
+					System.err.println("Screwed up");
+				}
 				// TODO changing = false;
 
 				// TODO CommunicationsThread in here send to server

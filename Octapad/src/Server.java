@@ -15,12 +15,12 @@ public class Server {
 	private ServerSocket serverSocket;
 	private int noOfPlayers;
 	private ArrayList<Player> players = new ArrayList<Player>();
-	private ArrayList<Thread> threads = new ArrayList<Thread>();
 	private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 	private static boolean currentlyAccessing = false;
 
 	public static void main(String[] args) {
 		display = new Display();
+
 		new Server();
 	}
 
@@ -33,17 +33,14 @@ public class Server {
 	 */
 	public void connectPlayers() {
 		Socket client;
-		Thread currentThread;
 		Player currentPlayer;
-
+		Thread t = new Thread(new BroadcastThread());
+		t.setPriority(Thread.MAX_PRIORITY);
+		t.start();
 		try {
 			serverSocket = new ServerSocket(421);
 			players = new ArrayList<Player>();
-			threads = new ArrayList<Thread>();
 
-			Thread t = new Thread(new BroadcastThread());
-			t.setPriority(Thread.MAX_PRIORITY);
-			t.start();
 			while (true) {
 
 				System.out.println("Waiting for connection");
@@ -53,27 +50,35 @@ public class Server {
 				noOfPlayers++;
 				System.out.printf("Client #%d connected!%n", noOfPlayers);
 				Position current = new Position(
-						(int) (Math.random() * (WIDTH - 30)) + 20,
-						(int) (Math.random() * (HEIGHT - 30)) + 20);
+						(short) (Math.random() * (WIDTH - 30)) + 20,
+						(short) (Math.random() * (HEIGHT - 30)) + 20);
 				while (!withinBounds(current, 50))
 					current = new Position(
-							(int) (Math.random() * (WIDTH - 30)) + 20,
-							(int) (Math.random() * (HEIGHT - 30)) + 20);
+							(short) (Math.random() * (WIDTH - 30)) + 20,
+							(short) (Math.random() * (HEIGHT - 30)) + 20);
 				currentlyAccessing = true;
 				currentPlayer = new Player(client, current, noOfPlayers);
 				players.add(currentPlayer);
 				// Initial position and colour
-				currentPlayer.sendCommand(currentPlayer.getPos().getX() + " "
-						+ currentPlayer.getPos().getY() + " "
-						+ currentPlayer.getColour().getRed() + " "
-						+ currentPlayer.getColour().getGreen() + " "
-						+ currentPlayer.getColour().getBlue());
+				short[] info = { currentPlayer.getPos().getX(),
+						currentPlayer.getPos().getY(),
+						(short) currentPlayer.getColour().getRed(),
+						(short) currentPlayer.getColour().getGreen(),
+						(short) currentPlayer.getColour().getBlue() };
+				System.out.println(currentPlayer.getPos().getX() + " "
+						+ currentPlayer.getPos().getY());
+				currentPlayer.sendCommand(info);
+				// currentPlayer.sendCommand(currentPlayer.getPos().getX() + " "
+				// + currentPlayer.getPos().getY() + " "
+				// + currentPlayer.getColour().getRed() + " "
+				// + currentPlayer.getColour().getGreen() + " "
+				// + currentPlayer.getColour().getBlue());
 				// currentThread = new Thread(new PlayerThread(currentPlayer));
 				// threads.add(currentThread);
 				// currentThread.start();
 				currentlyAccessing = false;
 				// Be nice to the JVM
-				Thread.sleep(1000);
+				Thread.sleep(100);
 			}
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
@@ -95,17 +100,31 @@ public class Server {
 
 		@Override
 		public void run() {
-			while (true) {
-				
+
+			while (!Thread.currentThread().isInterrupted()) {
+				// TODO maybe check for collisions here then just tell
+				// people
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				long start = System.currentTimeMillis();
+
 				for (int i = 0; i < players.size(); i++) {
 					Player p = players.get(i);
+					// System.out.println("hi");
 					if (currentlyAccessing)
 						break;
+					// System.out.println("bye");
+
+					// System.out.print(System.currentTimeMillis()-start+ " ");
 
 					if (!p.alive()) {// Tell them they are dead
 						System.out.println("Player " + p.getID() + " is dead");
-						p.sendCommand("6");
-						// TODO delete someone graphically when they are dead
+						// TODO delete someone graphically when they are
+						// dead
 
 						// TODO remove a thread
 						for (Bullet b : bullets) {
@@ -115,104 +134,62 @@ public class Server {
 						int remove = players.indexOf(p);
 						i = 0;
 						players.remove(remove);
+						break;
 					}
 
-					p.setSurroundings(surroundingPlayers(p),
-							surroundingShots(p));
-					p.updateSurroundings();
-					try {
-						Thread.sleep(2);
-						p.requestInfo();
-						if (p.shooting()) {
-							bullets.add(new Bullet(p.getPos(), p.getID(),
-									new Vector(Math.cos(p.getAngle() * 1.0
-											/ 180 * Math.PI), -1
-											* Math.sin(p.getAngle() * 1.0 / 180
-													* Math.PI))));
-						}
-
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
-				}
-			}
-		}
-	}
-
-	/**
-	 * Keeps track of each player
-	 * 
-	 * @author
-	 * @version May 31, 2016
-	 */
-	class PlayerThread implements Runnable {
-		Player p;
-
-		public PlayerThread(Player player) {
-			p = player;
-		}
-
-		public void run() {
-
-			// Initial position and colour
-			p.sendCommand(p.getPos().getX() + " " + p.getPos().getY() + " "
-					+ p.getColour().getRed() + " " + p.getColour().getGreen()
-					+ " " + p.getColour().getBlue());
-			int counter = 0;
-			// Keep track while the player lives
-			while (p.alive()) {
-				counter++;
-				long startTime = System.currentTimeMillis(); // start time plus
-																// 10 ms
-				// Update objects around it, trying to avoid lag
-				p.setSurroundings(surroundingPlayers(p), surroundingShots(p));
-				p.updateSurroundings();
-				try {
-					Thread.sleep(30);
+					// p.setSurroundings(surroundingPlayers(p),
+					// surroundingShots(p));
+					p.updateSurroundings(bullets, players);
+					// p.updateSurroundings();
+					// System.out.print(System.currentTimeMillis()-start+ " ");
+					// Requesting info
+					long s = System.currentTimeMillis();
 					p.requestInfo();
+					// System.out.println(System.currentTimeMillis()-s);
 					if (p.shooting()) {
 						bullets.add(new Bullet(p.getPos(), p.getID(),
 								new Vector(Math.cos(p.getAngle() * 1.0 / 180
-										* Math.PI), -1
-										* Math.sin(p.getAngle() * 1.0 / 180
-												* Math.PI))));
+										* Math.PI), Math.sin(p.getAngle() * 1.0
+										/ 180 * Math.PI))));
 					}
 
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
 
-				long endTime = System.currentTimeMillis(); // end time
-				if (counter % 500 == 0)
-					System.out.println(endTime - startTime);
+				long time = System.currentTimeMillis();
+				for (int i = 0; i < bullets.size(); i++) {
+					Bullet currentBullet = bullets.get(i);
+					boolean ok = true;
+					for (Player p : players) {
+						if (Math.abs(currentBullet.getPos().getX()
+								+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+										.xChange()) - p.getPos().getX()) <= 30
+								&& Math.abs(currentBullet.getPos().getY()
+										+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+												.yChange()) - p.getPos().getY()) <= 30
+								&& currentBullet.getID() != p.getID()) {
+							p.hit(10);
+							bullets.remove(currentBullet);
+							ok = false;
+							break;
+						}
 
-				// Checks to see if anything will damage the player and update
-				// health
-
-				// Check to see if the player needs an upgrade
+					}
+					if (!ok || currentBullet.getPos().getX() > WIDTH
+							|| currentBullet.getPos().getY() > HEIGHT
+							|| currentBullet.getPos().getY() < 0
+							|| currentBullet.getPos().getX() < 0
+							|| !currentBullet.alive()
+							|| time - currentBullet.time() > 4000) {
+						i--;
+						// System.out.println("removing bullet");
+						bullets.remove(currentBullet);
+					}
+				} // System.out.println("Server" +
+					// (System.currentTimeMillis()-start));
 			}
-
-			// Tell them they are dead
-			System.out.println("Player " + p.getID() + " is dead");
-			p.sendCommand("6");
-			// TODO delete someone graphically when they are dead
-
-			// TODO remove a thread
-			for (Bullet b : bullets) {
-				if (b.getID() == p.getID())
-					bullets.remove(b);
-			}
-			int remove = players.indexOf(p);
-			players.remove(remove);
-			threads.remove(remove);
 		}
 	}
 
-	// TODO move this inside so that they won't try to access resources at the
-	// same time
 	/**
 	 * 
 	 * @param p

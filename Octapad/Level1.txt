@@ -1,0 +1,67 @@
+Attic
+GameScreens//Floor2.png
+4
+3
+320 200
+ 
+Wall
+A boring old wall.
+Wall-H.png
+0 0
+
+Wall
+A boring old wall.
+Wall-H.png
+0 450
+
+Wall
+A boring old wall.
+Wall-V.png
+0 50
+
+Wall
+A boring old wall.
+Wall-V.png
+950 50
+
+Wardrobe
+An old wooden wardrobe.
+The wardrobe is locked.
+The wardrobe is locked.
+Cupboard1.png
+Cupboard1.png
+Cupboard1.png
+750 50
+-1
+-1
+-1
+false
+true
+
+Key
+A gold key that unlocks something.
+d2
+d3
+Key.png
+Key.png
+Key.png
+200 400
+-1
+-1
+-1
+true
+false
+
+Trapdoor
+This leads to the floor below.
+The trapdoor is locked.
+The trapdoor is unlocked.
+Trapdoor1.png
+Trapdoor1.png
+Trapdoor2.png
+800 300
+-1
+-1
+1
+false
+false

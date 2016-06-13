@@ -1,41 +1,38 @@
 public class Position {
-	private int x;
-	private int y;
+	private short x;
+	private short y;
 
-	Position(int x, int y) {
+	Position(short x, short y) {
 		this.x = x;
 		this.y = y;
 	}
+	
+	Position(int x, int y){
+		this.x = (short)x;
+		this.y = (short)y;
+	}
 
-	public int getX() {
+	public short getX() {
 		return x;
 	}
 
-	public int getY() {
+	public short getY() {
 		return y;
 	}
 
-	public void setY(int a) {
+	public void setY(short a) {
 		y = a;
 	}
 
-	public void setX(int a) {
+	public void setX(short a) {
 		x = a;
 	}
 
-	public void increaseX() {
-		x++;
-	}
-
-	public void increaseX(int increment) {
+	public void increaseX(short increment) {
 		x += increment;
 	}
 
-	public void increaseY() {
-		y++;
-	}
-
-	public void increaseY(int increment) {
+	public void increaseY(short increment) {
 		y += increment;
 	}
 

@@ -1,27 +1,20 @@
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
+//Import the necessary classes
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.GeneralPath;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public class PlayerClient extends JFrame {
 	// Final variables for the pane
 	private int WIDTH = 1024;
-	private int HEIGHT = 700;
-	private final static int HEALTH_HEIGHT = 5;
+	private int HEIGHT = 768;
+	private final static byte HEALTH_HEIGHT = 5;
 	private static GamePanel game;
 
 	/**
@@ -41,111 +34,415 @@ public class PlayerClient extends JFrame {
 		p.setVisible(true);
 	}
 
-	static class GamePanel extends JPanel implements MouseListener {
+	/**
+	 * The GamePanel class that keeps track of the game
+	 */
+	static class GamePanel extends JPanel implements MouseListener, KeyListener {
 
 		private static int time;
 		private static boolean timedOut;
 
-		// Relevant and important stuff
+		// Server variables
 		private static Socket sock;
-		private static BufferedReader br;
-		private static PrintWriter pw;
+		private static DataInputStream in;
+		private static DataOutputStream out;
+		private static String ip = "99.253.205.29";
+		// private static String ip = "localhost";
+		private static int port = 421;
 
+		// Player information
 		Color c;
-		private int maxHealth = 100;
-		private int currHealth = 100;
+		private short maxHealth = 100;
+		private short currHealth = 100;
 		private static long start;
 		private boolean alive = true;
-		private static String ip = "localhost";
-		private static int port = 421;
-		private Position pos;
-		private int angle;
-		private int upgrade = 3;
+		private int playerType;
+
+		private byte upgrade = 1;
 		private boolean shoot = false;
-		private int reloadTime = 300;
+		private short reloadTime = 300;
 		private int points = 0;
 		private ArrayList<Position> bullet = new ArrayList<Position>();
 		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
+
+		// Display information variables
+		private KButton goButton;
+		private KInputPanel nameInput, ipInput, portInput;
+		private static final Dimension SCREEN = new Dimension(1024, 768);
+		private static final Position CENTER = new Position(
+				(short) (SCREEN.getWidth() / 2),
+				(short) (SCREEN.getHeight() / 2));
+		private boolean titleScreen;
+		private JButton go;
+		private String name;
+		private int currentPlayer = 0;
+
+		// Physics variables
+		private Position pos, player;
+		private static Vector speed;
+		private static Vector accel;
+		private int angle;
+
+		private static int maxSpeed;
+		private int maxAccel;
+		private int keysDown;
+		private ArrayList<Integer> directionsPressed;
+		private PhysicsThread physics;
+		boolean changing = false;
+
+		private Image back;
 
 		/**
 		 * Creates a new GamePanel
 		 */
 		public GamePanel() {
-			// Connects to the server
-			try {
-				// String ip = JOptionPane.showInputDialog(null,
-				// "Please enter the server's IP address: ", "Enter IP Address",
-				// JOptionPane.INFORMATION_MESSAGE);
-				// int port = Integer.parseInt(JOptionPane.showInputDialog(null,
-				// "Please enter the server's port number: ", "Enter Port",
-				// JOptionPane.INFORMATION_MESSAGE));
-				sock = new Socket(ip, port);
-				br = new BufferedReader(new InputStreamReader(
-						sock.getInputStream()));
-				pw = new PrintWriter(sock.getOutputStream());
-				String[] command = br.readLine().split(" ");
-				pos = new Position(Integer.parseInt(command[0]),
-						Integer.parseInt(command[1]));
-				c = new Color(Integer.parseInt(command[2]),
-						Integer.parseInt(command[3]),
-						Integer.parseInt(command[4]));
-				System.out.println(pos.getX() + " " + pos.getY());
-				repaint(0);
+			setLayout(new GridLayout(5, 5));
+			setUpTitle();
+			createPlayer();
 
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
+			try {
+				back = new ImageIcon("back-low.jpg").getImage();// ImageIO.read(getClass().getResource("back.jpg"));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
 			// Begin game
-			new Thread(new ServerThread()).start();
-
+			// physics = (new PhysicsThread(accel, speed, pos, maxSpeed));
+			// new Thread(physics).start();
 			setPreferredSize(new Dimension(1024, 700));
 			addMouseListener(this);
+			addKeyListener(this);
+		}
+
+		// Initialize all the components for the title screen
+		void setUpTitle() {
+			nameInput = new KInputPanel("Name: ");
+			nameInput.setBackground(Color.red);
+			nameInput.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Name");
+					ipInput.setSelected(false);
+					portInput.setSelected(false);
+
+				}
+
+			});
+
+			ipInput = new KInputPanel("IP: ");
+			ipInput.setBackground(Color.RED);
+			ipInput.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					nameInput.setSelected(false);
+					portInput.setSelected(false);
+
+				}
+
+			});
+
+			portInput = new KInputPanel("Port: ");
+			portInput.setBackground(Color.RED);
+			portInput.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					nameInput.setSelected(false);
+					ipInput.setSelected(false);
+
+				}
+
+			});
+
+			// Listens to actions from the go button
+			goButton = new KButton("Go", 300, 100);
+			goButton.setBackground(Color.RED);
+			goButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Joining server");
+					// Connects to the server
+					boolean errorConnecting = false;
+					try {
+						// name = nameInput.getInput();
+						String ip = "localhost";// "99.253.205.29";//
+												// ipInput.getInput();
+						int port = 421;// Integer.parseInt(portInput.getInput());
+						sock = new Socket(ip, port);
+						in = new DataInputStream(sock.getInputStream());
+						out = new DataOutputStream(sock.getOutputStream());
+						// Read in the color and position
+						short x = in.readShort();
+						short y = in.readShort();
+						short r = in.readShort();
+						short g = in.readShort();
+						short b = in.readShort();
+						pos = new Position(x, y);
+						// System.out.println(pos.getX() +" "+pos.getY());
+						c = new Color(r, g, b);
+						System.out.println(pos.getX() + " " + pos.getY());
+						System.out.println(c);
+						// System.out.println(in.readShort());
+						// System.exit(0);
+						new Thread(new ServerThread()).start();
+						physics = (new PhysicsThread(accel, speed, pos,
+								maxSpeed));
+						new Thread(physics).start();
+
+					} catch (Exception execpt) {
+						// errorConnecting = true;
+						execpt.printStackTrace();
+					} finally {
+						// Removes all Components if the server connects
+						// successfully
+						if (!errorConnecting) {
+							GamePanel.this.removeAll();
+							// GamePanel.this.repaint();
+							GamePanel.this.requestFocusInWindow();
+							// Display Error message
+						} else {
+							JOptionPane
+									.showMessageDialog(
+											null,
+											"You have entered an invald IP/Port combination.",
+											"Warning",
+											JOptionPane.ERROR_MESSAGE);
+						}
+					}
+
+				}
+			});
+
+			displayTitle();
+		}
+
+		// Sets the display to the title screen
+		void displayTitle() {
+			// Add labels
+			alive = true;
+			pos = new Position((short) 0, (short) 0);
+			// movingCenter =new Position(pos.getX(), pos.getY());
+			keysDown = 0;
+			speed = new Vector(0, 0);
+			accel = new Vector(0, 0);
+			player = new Position(0, 0);
+			directionsPressed = new ArrayList<Integer>();
+			currentPlayer = 1;
+			// Pixels per second
+			maxSpeed = 300;
+			// Pixels per second^2
+			maxAccel = 500;
+
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			nameInput.requestFocusInWindow();
+			add(nameInput);
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(new JLabel(""));
+			add(goButton);
+			add(new JLabel(""));
+		}
+
+		void createPlayer() {
+			playerType = 1;
 		}
 
 		@Override
 		public void paintComponent(Graphics g) {
 			if (alive) {
+				this.setEnabled(true);
 				((Graphics2D) g).setRenderingHint(
 						RenderingHints.KEY_ANTIALIASING,
 						RenderingHints.VALUE_ANTIALIAS_ON);
 				g.setColor(Color.WHITE);
-				g.clearRect(0, 0, getWidth(), getHeight());
-
 				// Draw yourself
 				g.setColor(c);
-				g.fillOval(pos.getX() - 15, pos.getY() - 15, 30, 30);
+				// Update the center's angle
+				try {
+					angle = (int) (180 / Math.PI * Math
+							.atan((player.getY() - this.getMousePosition().y * 1.0)
+									/ (player.getX() - getMousePosition().x)));
 
+					if (player.getX() > getMousePosition().x)
+						angle += 180;
+					else if (player.getY() > getMousePosition().y)
+						angle += 360;
+				} catch (Exception e) {
+
+				}
+
+				// You are drawn as one of the players
+
+				int playerWidth = 10;
+				int playerHeight = 10;
+
+				int centerX = getWidth() / 2 - playerWidth / 2;
+				int centerY = getHeight() / 2 - playerHeight / 2;
+				int displayX = (int) (centerX + 50 * speed.getX() / maxSpeed);
+				int displayY = (int) (centerY + 50 * speed.getY() / maxSpeed);
+
+				player.setX((short) displayX);
+				player.setY((short) displayY);
+				g.drawImage(back, -2000 - pos.getX() + displayX,
+						-2000 - pos.getY() + displayY, this);
+				drawPads(g, upgrade, player, angle, c);
 				// Draw your health
 				g.setColor(Color.GREEN);
-				g.fillRect(pos.getX() - 15, pos.getY() - 30,
+				g.fillRect(displayX, displayY - 10,
 						(int) (30 * (currHealth * 1.0 / maxHealth)),
 						HEALTH_HEIGHT);
 				g.setColor(Color.RED);
-				g.fillRect(pos.getX() - 15
+				g.fillRect(displayX
 						+ (int) (30 * (currHealth * 1.0 / maxHealth)),
-						pos.getY() - 30,
+						displayY - 15,
 						(int) (30 * ((maxHealth - currHealth) / maxHealth)),
 						HEALTH_HEIGHT);
+				// System.out.println(pos.getX() + " "+ pos.getY());
+				g.fillRect(100 - pos.getX() + displayX, 100 - pos.getY()
+						+ displayY, 100, 100);
 
 				// Other players
 				for (tempPlayer p : players) {
-					g.setColor(p.getColor());
-					g.fillOval(p.getPos().getX() - 15, p.getPos().getY() - 15,
-							30, 30);
+					if (!p.getColor().equals(c)) {
+						drawPads(g, p.getUpgrade(), new Position(player.getX()
+								+ p.getPos().getX() - pos.getX(), player.getY()
+								+ p.getPos().getY() - pos.getY()),
+								p.getAngle(), p.getColor());
+					}
 				}
 
+				g.drawString("Health: " + currHealth, 800, 200);
+
+				long t1 = System.currentTimeMillis();
 				// Bullets
 				g.setColor(Color.red);
 				for (Position p : bullet) {
-					g.fillOval(p.getX() - 3, p.getY() - 3, 7, 7);
+					// g.fillsOval(p.getX() - 3 - pos.getX() + displayX,
+					// p.getY()
+					// - 3 - pos.getY() + displayY, 7, 7);
+
+					g.fillOval(p.getX() - 3 - pos.getX() + displayX, p.getY()
+							- 3 - pos.getY() + displayY, 7, 7);
 				}
-
-			} else
+				// System.out.println(System.currentTimeMillis() - t1);
+				repaint(100);
+			} else {
+				g.clearRect(0, 0, getWidth(), getHeight());
+				System.out.println("You are dead");
 				this.setEnabled(false);
+				displayTitle();
+			}
+			// System.out.println(System.currentTimeMillis() - tt);
 
+		}
+
+		void drawPads(Graphics g, int padType, Position center, int angle,
+				Color colour) {
+			Position[][] pads = {
+					{ new Position((short) 10, (short) 30),
+							new Position((short) 20, (short) 10),
+							new Position((short) 10, (short) 0),
+							new Position((short) 0, (short) 10),
+							new Position((short) 0, (short) 50),
+							new Position((short) 10, (short) 60),
+							new Position((short) 20, (short) 50) },
+					{ new Position((short) 30, (short) 45),
+							new Position((short) 50, (short) 0),
+							new Position((short) 60, (short) 10),
+							new Position((short) 50, (short) 20),
+							new Position((short) 30, (short) 20),
+							new Position((short) 20, (short) 20),
+							new Position((short) 20, (short) 30),
+							new Position((short) 20, (short) 60),
+							new Position((short) 20, (short) 70),
+							new Position((short) 30, (short) 70),
+							new Position((short) 50, (short) 70),
+							new Position((short) 60, (short) 80),
+							new Position((short) 50, (short) 90),
+							new Position((short) 20, (short) 90),
+							new Position((short) 0, (short) 90),
+							new Position((short) 0, (short) 70),
+							new Position((short) 0, (short) 20),
+							new Position((short) 0, (short) 0),
+							new Position((short) 20, (short) 0) },
+					{ new Position((short) 30, (short) 35),
+							new Position((short) 60, (short) 20),
+							new Position((short) 60, (short) 30),
+							new Position((short) 50, (short) 30),
+							new Position((short) 50, (short) 20),
+							new Position((short) 30, (short) 10),
+							new Position((short) 10, (short) 20),
+							new Position((short) 10, (short) 50),
+							new Position((short) 30, (short) 60),
+							new Position((short) 50, (short) 50),
+							new Position((short) 50, (short) 40),
+							new Position((short) 60, (short) 40),
+							new Position((short) 60, (short) 50),
+							new Position((short) 60, (short) 50),
+							new Position((short) 60, (short) 70),
+							new Position((short) 40, (short) 70),
+							new Position((short) 30, (short) 70),
+							new Position((short) 0, (short) 70),
+							new Position((short) 0, (short) 40),
+							new Position((short) 0, (short) 30),
+							new Position((short) 0, (short) 0),
+							new Position((short) 30, (short) 0),
+							new Position((short) 40, (short) 0),
+							new Position((short) 60, (short) 0),
+							new Position((short) 60, (short) 20) } };
+
+			g.setColor(colour);
+
+			GeneralPath padShape;
+			// Go through each shape
+
+			padShape = new GeneralPath(GeneralPath.WIND_EVEN_ODD,
+					pads[padType].length);
+			// Go through each point and update the points
+			for (int point = 0; point < pads[padType].length; point++) {
+				// If the point is not the center point
+				if (point != 0) {
+					// Place the point relative to the player
+
+					pads[padType][point].setX((short) (pads[padType][point]
+							.getX() + center.getX() - pads[padType][0].getX()));
+					pads[padType][point].setY((short) (pads[padType][point]
+							.getY() + center.getY() - pads[padType][0].getY()));
+					// Angle the direction of the paddle
+					double x1 = pads[padType][point].getX() - center.getX();
+					double y1 = pads[padType][point].getY() - center.getY();
+
+					double x2 = x1 * Math.cos(angle * Math.PI / 180) - y1
+							* Math.sin(angle * Math.PI / 180);
+					double y2 = x1 * Math.sin(angle * Math.PI / 180) + y1
+							* Math.cos(angle * Math.PI / 180);
+
+					pads[padType][point].setX((short) (x2 + center.getX()));
+					pads[padType][point].setY((short) (y2 + center.getY()));
+				}
+			}
+
+			padShape.moveTo(pads[padType][1].getX(), pads[padType][1].getY());
+			// First point is the center
+			int i = 1;
+			for (; i < pads[padType].length - 3; i += 3) {
+				padShape.curveTo(pads[padType][i].getX(),
+						pads[padType][i].getY(), pads[padType][i + 1].getX(),
+						pads[padType][i + 1].getY(),
+						pads[padType][i + 2].getX(),
+						pads[padType][i + 2].getY());
+				padShape.lineTo(pads[padType][i + 3].getX(),
+						pads[padType][i + 3].getY());
+			}
+			padShape.curveTo(pads[padType][i].getX(), pads[padType][i].getY(),
+					pads[padType][i + 1].getX(), pads[padType][i + 1].getY(),
+					pads[padType][i + 2].getX(), pads[padType][i + 2].getY());
+			padShape.closePath();
+
+			((Graphics2D) g).fill(padShape);
 		}
 
 		/**
@@ -179,133 +476,217 @@ public class PlayerClient extends JFrame {
 			public void run() {
 				// Initialize the timer
 				new Thread(new TimerThread()).start();
-				while (true) {
-					// Read in the server's command (if any)
-					String[] command = null;
-					do {
-						try {
-							command = br.readLine().split(" ");
-						} catch (IOException e) {
-							e.printStackTrace();
+				while (alive) {
+
+					long time = System.currentTimeMillis();
+
+					try {
+
+						short curr = in.readShort();
+						switch (curr) {
+						// PLace object
+						case 1:
+							// showTime = false;
+							int[][] move = new int[2][2];
+							move[0][0] = (int) in.read();
+							break;
+						// Place player
+						case 2:
+							// colour = Integer.parseInt(command[1]);
+							// GamePanel.this.repaint(0);
+							break;
+						// Update health
+						case 3:
+							try {
+								currHealth = in.readShort();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							// GamePanel.this.repaint(0);
+							break;
+						// Request upgrade
+						case 4:
+							// upgrade option =true
+							// GamePanel.this.repaint(0);
+							break;
+						// Awards points
+						case 5:
+							points += (int) in.read();
+							// GamePanel.this.repaint(0);
+							break;
+						// Timed out or dead
+						case 6:
+							alive = false;
+							timedOut = true;
+							// TODO end here but just testing right now
+							//System.exit(0);
+							break;
+						// Requesting information
+						case 7:
+							out.writeShort(pos.getX());
+							// System.out.println(pos.getX()+ " "+pos.getY()+
+							// " "+angle + " "+upgrade+ " "+shoot);
+							out.writeShort(pos.getY());
+							out.writeShort(angle);
+							out.writeShort(upgrade);
+							out.writeBoolean(shoot);
+							out.flush();
+							shoot = false;
+							// GamePanel.this.repaint(0);
+							break;
+						// Sending any new objects
+						case 8:
+							// System.out.println("Receiving info");
+							ArrayList<Position> currBullets = new ArrayList<Position>();
+							// any bullets in the area
+							short count = in.readShort();
+
+							for (int i = 0; i < count; i++) {
+								short x = in.readShort();
+								short y = in.readShort();
+								currBullets.add(new Position(x, y));
+							}
+
+							bullet = currBullets;
+							count = in.readShort();
+							// System.out.println(count);
+
+							ArrayList<tempPlayer> currPlayers = new ArrayList<tempPlayer>();
+							// sending all players in your area
+							for (int i = 0; i < count; i++) {
+								short x = in.readShort();
+								short y = in.readShort();
+								short r = in.readShort();
+								short g = in.readShort();
+								short b = in.readShort();
+								short upgrade = in.readShort();
+								short angle = in.readShort();
+								currPlayers
+										.add(new tempPlayer(new Position(x, y),
+												new Color(r, g, b), upgrade,
+												angle));
+							}
+							// System.out.println("players.size"+players.size());
+							players = currPlayers;
+							break;
+						case 9:
+							alive = false;
+							break;
+
 						}
-					} while (command == null);
-					// System.out.println(command[0]);
-					switch (Integer.parseInt(command[0])) {
-					// PLace object
-					case 1:
-						// showTime = false;
-						int[][] move = new int[2][2];
-						move[0][0] = Integer.parseInt(command[1]);
-						move[0][1] = Integer.parseInt(command[2]);
-						move[1][0] = Integer.parseInt(command[3]);
-
-						break;
-					// Place player
-					case 2:
-						// colour = Integer.parseInt(command[1]);
-						GamePanel.this.repaint(0);
-						break;
-					// Update health
-					case 3:
-						currHealth = Integer.parseInt(command[1]);
-						GamePanel.this.repaint(0);
-						break;
-					// Request upgrade
-					case 4:
-						// upgrade option =true
-						GamePanel.this.repaint(0);
-						break;
-					// Awards points
-					case 5:
-						points += Integer.parseInt(command[1]);
-						GamePanel.this.repaint(0);
-						break;
-					// Timed out or dead
-					case 6:
-						alive = false;
-						timedOut = true;
-						// TODO end here but just testing right now
-						System.exit(0);
-						break;
-					// Requesting information
-					case 7:
-						if (shoot)
-							pw.println(pos.getX() + " " + pos.getY() + " "
-									+ angle + " 1 " + upgrade);
-						else
-							pw.println(pos.getX() + " " + pos.getY() + " "
-									+ angle + " 0 " + upgrade);
-						pw.flush();
-						shoot = false;
-						GamePanel.this.repaint(0);
-						break;
-					// Sending any new objects
-					case 8:
-						ArrayList<Position> currBullets = new ArrayList<Position>();
-						// any bullets in the area
-						int index = 1;
-						int count = Integer.parseInt(command[index]);
-						index++;
-						for (int i = 0; i < count; i++) {
-							int x = Integer.parseInt(command[index]);
-							index++;
-							int y = Integer.parseInt(command[index]);
-							index++;
-							currBullets.add(new Position(x, y));
-
-						}
-						bullet = currBullets;
-						count = Integer.parseInt(command[index]);
-						index++;
-
-						ArrayList<tempPlayer> currPlayers = new ArrayList<tempPlayer>();
-						// sending all players in your area
-						for (int i = 0; i < count; i++) {
-							int x = Integer.parseInt(command[index]);
-							index++;
-							int y = Integer.parseInt(command[index]);
-							index++;
-							int r = Integer.parseInt(command[index]);
-							index++;
-							int g = Integer.parseInt(command[index]);
-							index++;
-							int b = Integer.parseInt(command[index]);
-							index++;
-							int upgrade = Integer.parseInt(command[index]);
-							index++;
-							currPlayers.add(new tempPlayer(new Position(x, y),
-									new Color(r, g, b), upgrade));
-						}
-						players = currPlayers;
-						repaint(0);
-						// TODO change the graphics based on this information
-
-						break;
-
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
+					// System.out.println(System.currentTimeMillis() - time);
+
 				}
 			}
 		}
 
 		@Override
-		public void mousePressed(MouseEvent arg0) {
-			// if (time > reloadTime)
-			// shoot = true;
+		public void keyPressed(KeyEvent e) {
+			this.requestFocusInWindow();
+			int key = e.getKeyCode();
+
+			if (!directionsPressed.contains(key)) {
+				if (key == KeyEvent.VK_UP) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				} else if (key == KeyEvent.VK_LEFT) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				} else if (key == KeyEvent.VK_DOWN) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				} else if (key == KeyEvent.VK_RIGHT) {
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
+				}
+			}
+
 		}
 
-		// TODO make sure this works
-		@Override
-		public void mouseClicked(MouseEvent arg0) {
+		void updateAccel() {
+			accel.setX(0);
+			accel.setY(0);
+			if (keysDown == 1) {
+				switch (directionsPressed.get(0)) {
+				case KeyEvent.VK_UP:
+					accel.setY(maxAccel * -1);
+					break;
+				case KeyEvent.VK_LEFT:
+					accel.setX(maxAccel * -1);
+					break;
+				case KeyEvent.VK_DOWN:
+					accel.setY(maxAccel);
+					break;
+				case KeyEvent.VK_RIGHT:
+					accel.setX(maxAccel);
+					break;
+				}
+			} else if (keysDown == 2) {
+				int diagonal = (int) (maxAccel / Math.sqrt(2));
+				if (directionsPressed.contains(KeyEvent.VK_UP)
+						&& directionsPressed.contains(KeyEvent.VK_LEFT)) {
+					accel.setX(diagonal * -1);
+					accel.setY(diagonal * -1);
+				} else if (directionsPressed.contains(KeyEvent.VK_UP)
+						&& directionsPressed.contains(KeyEvent.VK_DOWN)) {
+				} else if (directionsPressed.contains(KeyEvent.VK_UP)
+						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
+					accel.setX(diagonal);
+					accel.setY(diagonal * -1);
+				} else if (directionsPressed.contains(KeyEvent.VK_LEFT)
+						&& directionsPressed.contains(KeyEvent.VK_DOWN)) {
+					accel.setX(diagonal * -1);
+					accel.setY(diagonal);
+				} else if (directionsPressed.contains(KeyEvent.VK_LEFT)
+						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
+				} else if (directionsPressed.contains(KeyEvent.VK_DOWN)
+						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
+					accel.setX(diagonal);
+					accel.setY(diagonal);
+				}
+			}
+		}
 
-			angle = (int) (180 / Math.PI * Math.atan((pos.getY() - arg0
-					.getPoint().y * 1.0) / (arg0.getPoint().x - pos.getX())));
-			if (pos.getX() > arg0.getPoint().x)
-				angle = 180 + angle;
+		@Override
+		public void keyReleased(KeyEvent e) {
+			int key = e.getKeyCode();
+			if (key == KeyEvent.VK_UP) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_LEFT) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_DOWN) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_RIGHT) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			}
+		}
+
+		@Override
+		public void mousePressed(MouseEvent arg0) {
+			this.requestFocusInWindow();
 			if (time > reloadTime) {
 				shoot = true;
-				// start = System.currentTimeMillis();
-				// time = 0;
 			}
+		}
+
+		@Override
+		public void mouseClicked(MouseEvent e) {
 		}
 
 		@Override
@@ -319,18 +700,100 @@ public class PlayerClient extends JFrame {
 		@Override
 		public void mouseReleased(MouseEvent arg0) {
 		}
+
+		@Override
+		public void keyTyped(KeyEvent arg0) {
+			// TODO Auto-generated method stub
+
+		}
 	}
+
+	static class PhysicsThread implements Runnable {
+		private Vector accel, velocity, poso;
+		private Position pos;
+		private long currTime, maxSpeed;
+
+		PhysicsThread(Vector accel, Vector velocity, Position position,
+				int maxSpeed) {
+			this.accel = accel;
+			this.velocity = velocity;
+			this.pos = position;
+			poso = new Vector(pos.getX(), pos.getY());
+			this.maxSpeed = maxSpeed;
+		}
+
+		Vector getVelocityRatio() {
+			Vector ratio = new Vector(0, 0);
+			double vx = velocity.getX();
+			double vy = velocity.getY();
+
+			ratio.setX(vx / maxSpeed);
+			ratio.setY(vy / maxSpeed);
+
+			return ratio;
+		}
+
+		public void run() {
+			while (true) {
+				long t1 = System.currentTimeMillis();
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				long t2 = System.currentTimeMillis();
+				int change = (int) (t2 - t1);
+				// TODO changing = true;
+				// (velocity.getMagnitude() < maxSpeed/2?
+				// accel.getX()/2:accel.getX())
+				velocity.setX(.96 * (velocity.getX() + accel.getX()
+						* (change / 1000.0)));
+
+				velocity.setY(.96 * (velocity.getY() + accel.getY()
+						* (change / 1000.0)));
+
+				if (velocity.getMagnitude() > maxSpeed) {
+					velocity.setX((velocity.getX() < 0 ? -1 : 1)
+							* maxSpeed
+							* Math.cos(Math.atan(velocity.getY()
+									/ velocity.getX())));
+					velocity.setY((velocity.getX() < 0 ? -1 : 1)
+							* maxSpeed
+							* Math.sin(Math.atan(velocity.getY()
+									/ velocity.getX())));
+				}
+
+				poso.setX((pos.getX() + velocity.getX() * (change / 1000.0)));
+				poso.setY((pos.getY() + velocity.getY() * (change / 1000.0)));
+				// System.out.println(accel.getX() + " " + accel.getY());
+				// System.out.println(velocity.getX() + " " + velocity.getY());
+				// System.out.println(pos.getX() + " " + pos.getY());
+				pos.setX((short) Math.round(poso.getX()));
+				pos.setY((short) Math.round(poso.getY()));
+				// game.repaint();
+
+				// TODO changing = false;
+
+				// TODO CommunicationsThread in here send to server
+				// TODO Message queue (maybe send every other one?
+			}
+		}
+	}
+
 }
 
 class tempPlayer {
 	private Position pos;
 	private Color c;
 	private int upgrade;
+	private int angle;
 
-	tempPlayer(Position p, Color col, int upgrade) {
+	tempPlayer(Position p, Color col, int upgrade, int angle) {
 		pos = p;
 		c = col;
 		this.upgrade = upgrade;
+		this.angle = angle;
 	}
 
 	public Position getPos() {
@@ -343,5 +806,9 @@ class tempPlayer {
 
 	public int getUpgrade() {
 		return upgrade;
+	}
+
+	public int getAngle() {
+		return angle;
 	}
 }

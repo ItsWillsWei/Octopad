@@ -1,9 +1,9 @@
 import java.awt.Color;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -14,18 +14,16 @@ public class Player {
 	private int id;
 	private int activeCount = 0;
 	private Socket sock;
-	private InputStream in;
-	private BufferedReader br;
-	private OutputStream out;
+	private DataInputStream in;
+	private DataOutputStream out;
 	private Position pos;
 	private Color color;
-	private PrintWriter pw;
 	private int health = 90;
 	private boolean alive = true;
-	private int timeOut = 20000;
+	private int timeOut = 10000;
 	private int angle;
 	private boolean shoot;
-	private int upgrade = 0;
+	private short upgrade = 0;
 	private ArrayList<Bullet> bullet;
 	private ArrayList<Player> players;
 
@@ -37,10 +35,8 @@ public class Player {
 			color = new Color((int) (Math.random() * 256),
 					(int) (Math.random() * 256), (int) (Math.random() * 256));
 			System.out.println(color);
-			in = sock.getInputStream();
-			br = new BufferedReader(new InputStreamReader(in));
-			out = sock.getOutputStream();
-			pw = new PrintWriter(out);
+			in = new DataInputStream(sock.getInputStream());
+			out = new DataOutputStream(sock.getOutputStream());
 			this.id = id;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -49,11 +45,26 @@ public class Player {
 
 	public void hit(int n) {
 		health -= n;
-		pw.println("3 " + health);
+
+		if (health <= 0) {
+			try {
+				out.writeShort(6);
+				this.alive = false;
+			} catch (Exception e) {
+			}
+		} else {
+			try {
+				out.writeShort(3);
+				out.writeShort(health);
+				out.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public int getAngle() {
-		//System.out.println("angle is " + angle);
 		return angle;
 	}
 
@@ -94,34 +105,76 @@ public class Player {
 		return alive;
 	}
 
-	public void sendCommand(String command) {
-		//System.out.println("send");
-		pw.println(command);
-		pw.flush();
+	public void sendCommand(short[] info) {
+		// System.out.println("send");
+
+		// System.out.println("sending");
+		try {
+			for (short n : info) {
+				out.writeShort(n);
+				out.flush();
+			}
+		} catch (IOException r) {
+		}
 	}
 
 	public void updateSurroundings() {
-		// Removed /10
-		pw.print("8 ");
-		pw.print(bullet.size() + " ");
-		long time = System.currentTimeMillis();
-		for (Bullet bull : bullet) {
-			pw.print((bull.getPos().getX() + (int) (bull.xChange()
-					* (time - bull.time()) / 10))
-					+ " "
-					+ (bull.getPos().getY() + (int) (bull.yChange()
-							* (time - bull.time()) / 10)) + " ");
+		try {
+			out.writeShort(8);
+			out.writeShort(bullet.size());
+			long time = System.currentTimeMillis();
+
+			for (Bullet bull : bullet) {
+				out.writeShort(bull.getPos().getX()
+						+ (int) (bull.xChange() * (time - bull.time()) / 10));
+				out.writeShort(bull.getPos().getY()
+						+ (int) (bull.yChange() * (time - bull.time()) / 10));
+			}
+
+			out.writeShort(players.size());
+			for (Player player : players) {
+				out.writeShort(player.getPos().getX());
+				out.writeShort(player.getPos().getY());
+				out.writeShort(player.getColour().getRed());
+				out.writeShort(player.getColour().getGreen());
+				out.writeShort(player.getColour().getBlue());
+				out.writeShort(player.getUpgrade());
+				out.writeShort(player.getAngle());
+
+			}
+			out.flush();
+
+		} catch (Exception e) {
 		}
-		pw.print(players.size() + " ");
-		for (Player player : players) {
-			pw.print(player.getPos().getX() + " " + player.getPos().getY()
-					+ " " + player.getColour().getRed() + " "
-					+ player.getColour().getGreen() + " "
-					+ player.getColour().getBlue() + " " + player.getUpgrade()
-					+ " ");
+	}
+
+	public void updateSurroundings(ArrayList<Bullet> b, ArrayList<Player> p) {
+		try {
+			long time = System.currentTimeMillis();
+			out.writeShort(8);
+			out.writeShort(b.size());
+			for (Bullet bull : b) {
+				out.writeShort(bull.getPos().getX()
+						+ (int) (bull.xChange() * (time - bull.time()) / 10));
+				out.writeShort(bull.getPos().getY()
+						+ (int) (bull.yChange() * (time - bull.time()) / 10));
+			}
+
+			out.writeShort(p.size());
+			for (Player player : p) {
+				out.writeShort(player.getPos().getX());
+				out.writeShort(player.getPos().getY());
+				out.writeShort(player.getColour().getRed());
+				out.writeShort(player.getColour().getGreen());
+				out.writeShort(player.getColour().getBlue());
+				out.writeShort(player.getUpgrade());
+				out.writeShort(player.getAngle());
+
+			}
+			out.flush();
+
+		} catch (Exception e) {
 		}
-		pw.println();
-		pw.flush();
 
 	}
 
@@ -129,45 +182,49 @@ public class Player {
 	 * Asking for an update on the player
 	 */
 	public void requestInfo() {
-		try {
-			while (br.ready())
-				System.out.println("Dumping: " + br.readLine());
-
-			pw.println("7"); // Requesting all information
-			pw.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
 		long start = System.currentTimeMillis();
+		try {
+			// while (in.readShort() != 0)
+			// System.out.println("Dumping: " + in.read());
+			// System.out.println("Requesting info");
+			out.writeShort(7);
+			out.flush();
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+		// System.out.println(System.currentTimeMillis() - start);
 		CommunicationThread communistThread = new CommunicationThread();
 		Thread t = new Thread(communistThread);
-
 		t.start();
 
 		// Query for a move every 10ms until the timeout is reached or the move
 		// is received
+		// long t2 = System.currentTimeMillis();
 		while (!communistThread.updated()
 				&& System.currentTimeMillis() - start < timeOut) {
 			try {
-				Thread.sleep(10);
+				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
+		// System.out.println("stalin"+(System.currentTimeMillis()-t2));
 
 		// Tell a player of timeout, otherwise update the position
 		if (!communistThread.updated()) {
 			System.out.println("Manual timeout");
 			communistThread.timeout();
-			pw.println("6");
-			pw.flush();
-		} else
-			activeCount++;
+			try {
+				out.write(6);
+				out.flush();
+			} catch (Exception e) {
+			}
+			// } else {
+			// activeCount++;
 
-		if (activeCount > 10000) {
-			alive = false;
-			System.out.println("Timed out too much");
+			// System.out.println("info received");
 		}
 
 	}
@@ -178,35 +235,29 @@ public class Player {
 	 */
 	class CommunicationThread implements Runnable {
 		private boolean timeout = false;
-		private Position move;
 		private boolean infoReceived = false;
 
 		public CommunicationThread() {
-			move = new Position(-1, -1);
+			// move = new Position((short) -1, (short) -1);
 		}
 
 		public void run() {
+			long start = System.currentTimeMillis();
 			try {
-				while (!br.ready() && !timeout) {
+				short x = in.readShort();
+				while (x == 0 && !timeout) {
+					x = in.readShort();
 				}
-				;
 
-				// System.out.println(timeout);
 				if (!timeout) {
-					// System.out.println("Communcation Thread active");
-					// If the first number is 1 (indicating a player wants to
-					// move)
-					String[] command = br.readLine().split(" ");
-					move = new Position(Integer.parseInt(command[0]),
-							Integer.parseInt(command[1]));
 
-					angle = Integer.parseInt(command[2]);
-					shoot = command[3].equals("1"); // True or false
-					upgrade = Integer.parseInt(command[4]);
+					short y = in.readShort();
+					angle = in.readShort();
+					upgrade = in.readShort();
+					shoot = in.readBoolean();
 					infoReceived = true;
-//					System.out.println("Received: " + move.getX() + " "
-//							+ move.getY() + " " + angle + " " + shoot + " "
-//							+ upgrade);
+					pos = new Position(x, y);
+
 				}
 			} catch (Exception e) {
 
@@ -216,6 +267,14 @@ public class Player {
 		public boolean timeout() {
 			timeout = true;
 			alive = false;
+
+			// Tell the player that he's dead
+			try {
+				out.writeShort(9);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return infoReceived;
 		}
 

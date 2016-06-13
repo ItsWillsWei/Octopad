@@ -42,36 +42,12 @@ public class Bullet extends Piece {
 	public int getID() {
 		return id;
 	}
-
-	public void moveUp(int pixels) {
-		pos = new Position(pos.getX(), pos.getY() - pixels);
-	}
-
-	public void moveDown(int pixels) {
-		pos = new Position(pos.getX(), pos.getY() - pixels);
-	}
-
-	// /**
-	// * Keeps track of the time elapsed since a player's turn began
-	// */
-	// class TimerThread implements Runnable {
-	// public void run() {
-	// long start = System.currentTimeMillis();
-	// while (System.currentTimeMillis() - start < 2000) {
-	// try {
-	// Thread.sleep(100);
-	// modifying = true;
-	// truePos.setX(truePos.getX() + velocity.getX());
-	// truePos.setY(truePos.getY() + velocity.getY());
-	// pos.setX((int) truePos.getX());
-	// pos.setY((int) truePos.getY());
-	// modifying = false;
-	// } catch (InterruptedException e) {
-	// // TODO Auto-generated catch block
-	// e.printStackTrace();
-	// }
-	// }
-	// active = false;
-	// }
-	// }
+//
+//	public void moveUp(int pixels) {
+//		pos = new Position(pos.getX(), pos.getY() - pixels);
+//	}
+//
+//	public void moveDown(int pixels) {
+//		pos = new Position(pos.getX(), pos.getY() - pixels);
+//	}
 }
