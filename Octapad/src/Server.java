@@ -105,7 +105,7 @@ public class Server {
 				// TODO maybe check for collisions here then just tell
 				// people
 				try {
-					Thread.sleep(10);
+					Thread.sleep(25);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -139,12 +139,17 @@ public class Server {
 
 					// p.setSurroundings(surroundingPlayers(p),
 					// surroundingShots(p));
+					
 					p.updateSurroundings(bullets, players);
 					// p.updateSurroundings();
 					// System.out.print(System.currentTimeMillis()-start+ " ");
 					// Requesting info
+
+					
 					long s = System.currentTimeMillis();
+
 					p.requestInfo();
+					System.out.println("Outside player class:"+ (System.currentTimeMillis() - s));
 					// System.out.println(System.currentTimeMillis()-s);
 					if (p.shooting()) {
 						bullets.add(new Bullet(p.getPos(), p.getID(),
@@ -184,8 +189,9 @@ public class Server {
 						// System.out.println("removing bullet");
 						bullets.remove(currentBullet);
 					}
-				} // System.out.println("Server" +
-					// (System.currentTimeMillis()-start));
+				}
+				//System.out.println("Server"
+						//+ (System.currentTimeMillis() - start));
 			}
 		}
 	}

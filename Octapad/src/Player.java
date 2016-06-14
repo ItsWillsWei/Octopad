@@ -20,7 +20,7 @@ public class Player {
 	private Color color;
 	private int health = 90;
 	private boolean alive = true;
-	private int timeOut = 10000;
+	private int timeOut = 500;
 	private int angle;
 	private boolean shoot;
 	private short upgrade = 0;
@@ -140,7 +140,6 @@ public class Player {
 				out.writeShort(player.getColour().getBlue());
 				out.writeShort(player.getUpgrade());
 				out.writeShort(player.getAngle());
-
 			}
 			out.flush();
 
@@ -202,8 +201,10 @@ public class Player {
 		// Query for a move every 10ms until the timeout is reached or the move
 		// is received
 		// long t2 = System.currentTimeMillis();
+		int count =0;
 		while (!communistThread.updated()
 				&& System.currentTimeMillis() - start < timeOut) {
+			count++;
 			try {
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
@@ -226,6 +227,7 @@ public class Player {
 
 			// System.out.println("info received");
 		}
+		System.out.println(System.currentTimeMillis()-start);
 
 	}
 
@@ -257,7 +259,8 @@ public class Player {
 					shoot = in.readBoolean();
 					infoReceived = true;
 					pos = new Position(x, y);
-
+					//System.out.println("Server got: " + x + " " + y + " "
+						//	+ angle + " " + upgrade);
 				}
 			} catch (Exception e) {
 

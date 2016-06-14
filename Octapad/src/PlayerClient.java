@@ -46,8 +46,8 @@ public class PlayerClient extends JFrame {
 		private static Socket sock;
 		private static DataInputStream in;
 		private static DataOutputStream out;
-		private static String ip = "99.253.205.29";
-		// private static String ip = "localhost";
+		//private static String ip = "99.253.205.29";
+		 private static String ip = "localhost";
 		private static int port = 421;
 
 		// Player information
@@ -60,7 +60,7 @@ public class PlayerClient extends JFrame {
 
 		private byte upgrade = 1;
 		private boolean shoot = false;
-		private short reloadTime = 300;
+		private short reloadTime = 100;
 		private int points = 0;
 		private ArrayList<Position> bullet = new ArrayList<Position>();
 		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
@@ -160,9 +160,9 @@ public class PlayerClient extends JFrame {
 					boolean errorConnecting = false;
 					try {
 						// name = nameInput.getInput();
-						String ip = "localhost";// "99.253.205.29";//
-												// ipInput.getInput();
-						int port = 421;// Integer.parseInt(portInput.getInput());
+//						String ip = "10.242.180.173";// "99.253.205.29";//
+//												// ipInput.getInput();
+//						int port = 421;// Integer.parseInt(portInput.getInput());
 						sock = new Socket(ip, port);
 						in = new DataInputStream(sock.getInputStream());
 						out = new DataOutputStream(sock.getOutputStream());
@@ -569,6 +569,7 @@ public class PlayerClient extends JFrame {
 							}
 							// System.out.println("players.size"+players.size());
 							players = currPlayers;
+							System.out.println("receieved players: "+players.size()+" bullets: "+bullet.size());
 							break;
 						case 9:
 							alive = false;
@@ -682,6 +683,7 @@ public class PlayerClient extends JFrame {
 			this.requestFocusInWindow();
 			if (time > reloadTime) {
 				shoot = true;
+				System.out.println("fire");
 			}
 		}
 
