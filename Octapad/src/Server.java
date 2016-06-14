@@ -16,6 +16,7 @@ public class Server {
 	private int noOfPlayers;
 	private ArrayList<Player> players = new ArrayList<Player>();
 	private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
+	private ArrayList<Block> blocks = new ArrayList<Block>();
 	private static boolean currentlyAccessing = false;
 
 	public static void main(String[] args) {
@@ -37,6 +38,8 @@ public class Server {
 		Thread t = new Thread(new BroadcastThread());
 		t.setPriority(Thread.MAX_PRIORITY);
 		t.start();
+		Thread g = new Thread(new GenerateBlocks());
+		g.start();
 		try {
 			serverSocket = new ServerSocket(421);
 			players = new ArrayList<Player>();
@@ -95,7 +98,12 @@ public class Server {
 		return (p.getX() - radius > 0 && p.getX() + radius < WIDTH
 				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
-
+	
+	class GenerateBlocks implements Runnable{
+		public void run(){
+			
+		}
+	}
 	class BroadcastThread implements Runnable {
 
 		@Override

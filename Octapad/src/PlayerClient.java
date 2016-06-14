@@ -49,7 +49,7 @@ public class PlayerClient extends JFrame {
 	
 	static class RunServer implements Runnable{
 		public void run(){
-			new Server();
+			//new Server();
 		}
 	}
 
@@ -244,6 +244,7 @@ public class PlayerClient extends JFrame {
 		void displayTitle() {
 			// Add labels
 			alive = true;
+			currHealth = 100;
 			pos = new Position((short) 0, (short) 0);
 			// movingCenter =new Position(pos.getX(), pos.getY());
 			keysDown = 0;
@@ -617,7 +618,9 @@ public class PlayerClient extends JFrame {
 						case 9:
 							alive = false;
 							break;
-
+						case 10:
+							//place blocks
+							break;
 						}
 					} catch (IOException e) {
 						e.printStackTrace();

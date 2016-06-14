@@ -1,5 +1,4 @@
 public class Bullet extends Piece {
-	private Position pos;
 	private Vector truePos;
 	private int id;
 	private boolean modifying, active=true;
@@ -7,11 +6,12 @@ public class Bullet extends Piece {
 	private long time;
 
 	Bullet(Position p, int id, Vector v) {
+		super(p);
 		this.id = id;
-		pos = p;
+		
 		// time = System.currentTimeMillis();
 		velocity = v;
-		truePos = new Vector(pos.getX(), pos.getY());
+		truePos = new Vector(p.getX(), p.getY());
 		time = System.currentTimeMillis();
 		// Thread t = new Thread(new TimerThread());
 		// t.start();
@@ -36,7 +36,7 @@ public class Bullet extends Piece {
 	public Position getPos() {
 		if (modifying)
 			return null;
-		return pos;
+		return super.getPos();
 	}
 
 	public int getID() {
