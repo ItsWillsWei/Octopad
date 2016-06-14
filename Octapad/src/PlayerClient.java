@@ -252,6 +252,7 @@ public class PlayerClient extends JFrame {
 
 		@Override
 		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
 			if (alive) {
 				this.setEnabled(true);
 				((Graphics2D) g).setRenderingHint(
@@ -262,14 +263,22 @@ public class PlayerClient extends JFrame {
 				g.setColor(c);
 				// Update the center's angle
 				try {
+					double y = player.getY() - this.getMousePosition().y;
+					double x = player.getX() - getMousePosition().x;
+					if(x < 0.5 && x > -0.5){
+						angle = (y<=0? 90:270);
+					}
+					else
 					angle = (int) (180 / Math.PI * Math
-							.atan((player.getY() - this.getMousePosition().y * 1.0)
-									/ (player.getX() - getMousePosition().x)));
+							.atan(y
+									/ x));
 
 					if (player.getX() > getMousePosition().x)
 						angle += 180;
 					else if (player.getY() > getMousePosition().y)
 						angle += 360;
+					
+					System.out.println(angle);
 				} catch (Exception e) {
 
 				}
