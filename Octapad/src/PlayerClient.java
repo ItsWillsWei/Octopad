@@ -1,20 +1,32 @@
 //Import the necessary classes
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.GeneralPath;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.util.ArrayList;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 public class PlayerClient extends JFrame {
 	// Final variables for the pane
-	private int WIDTH = 1024;
-	private int HEIGHT = 768;
-	private final static byte HEALTH_HEIGHT = 5;
 	private static GamePanel game;
 
 	/**
@@ -30,24 +42,33 @@ public class PlayerClient extends JFrame {
 	}
 
 	public static void main(String[] args) throws Exception {
+		new Thread(new RunServer()).start();
 		PlayerClient p = new PlayerClient();
 		p.setVisible(true);
+	}
+	
+	static class RunServer implements Runnable{
+		public void run(){
+			new Server();
+		}
 	}
 
 	/**
 	 * The GamePanel class that keeps track of the game
 	 */
 	static class GamePanel extends JPanel implements MouseListener, KeyListener {
-
+		private final static byte HEALTH_HEIGHT = 5;
+		private static byte HEALTH_LENGTH = 30;
 		private static int time;
 		private static boolean timedOut;
+		public boolean online;
 
 		// Server variables
 		private static Socket sock;
 		private static DataInputStream in;
 		private static DataOutputStream out;
-		//private static String ip = "99.253.205.29";
-		 private static String ip = "localhost";
+		// private static String ip = "99.253.205.29";
+		private static String ip = "localhost";
 		private static int port = 421;
 
 		// Player information
@@ -66,15 +87,13 @@ public class PlayerClient extends JFrame {
 		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
 
 		// Display information variables
-		private KButton goButton;
+		private KButton serverButton, offlineButton;
 		private KInputPanel nameInput, ipInput, portInput;
 		private static final Dimension SCREEN = new Dimension(1024, 768);
 		private static final Position CENTER = new Position(
 				(short) (SCREEN.getWidth() / 2),
 				(short) (SCREEN.getHeight() / 2));
 		private boolean titleScreen;
-		private JButton go;
-		private String name;
 		private int currentPlayer = 0;
 
 		// Physics variables
@@ -149,23 +168,35 @@ public class PlayerClient extends JFrame {
 				}
 
 			});
+			
+			offlineButton = new KButton("Play Offline", 300, 100);
+			offlineButton.setBackground(Color.GREEN);
+			offlineButton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent e){
+					online = false;
+					physics = (new PhysicsThread(accel, speed, pos,
+							maxSpeed));
+					new Thread(physics).start();
+					GamePanel.this.removeAll();
+					GamePanel.this.repaint();
+					GamePanel.this.requestFocusInWindow();
+				}
+			});
 
 			// Listens to actions from the go button
-			goButton = new KButton("Go", 300, 100);
-			goButton.setBackground(Color.RED);
-			goButton.addActionListener(new ActionListener() {
+			serverButton = new KButton("Play on Server", 300, 100);
+			serverButton.setBackground(Color.RED);
+			serverButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					System.out.println("Joining server");
+					online = true;
 					// Connects to the server
 					boolean errorConnecting = false;
 					try {
-						// name = nameInput.getInput();
-//						String ip = "10.242.180.173";// "99.253.205.29";//
-//												// ipInput.getInput();
-//						int port = 421;// Integer.parseInt(portInput.getInput());
 						sock = new Socket(ip, port);
 						in = new DataInputStream(sock.getInputStream());
 						out = new DataOutputStream(sock.getOutputStream());
+						currHealth = maxHealth;
 						// Read in the color and position
 						short x = in.readShort();
 						short y = in.readShort();
@@ -173,11 +204,9 @@ public class PlayerClient extends JFrame {
 						short g = in.readShort();
 						short b = in.readShort();
 						pos = new Position(x, y);
-						// System.out.println(pos.getX() +" "+pos.getY());
 						c = new Color(r, g, b);
 						System.out.println(pos.getX() + " " + pos.getY());
 						System.out.println(c);
-						// System.out.println(in.readShort());
 						// System.exit(0);
 						new Thread(new ServerThread()).start();
 						physics = (new PhysicsThread(accel, speed, pos,
@@ -224,9 +253,9 @@ public class PlayerClient extends JFrame {
 			directionsPressed = new ArrayList<Integer>();
 			currentPlayer = 1;
 			// Pixels per second
-			maxSpeed = 300;
+			maxSpeed = 800;
 			// Pixels per second^2
-			maxAccel = 500;
+			maxAccel = 2000;
 
 			add(new JLabel(""));
 			add(new JLabel(""));
@@ -239,10 +268,10 @@ public class PlayerClient extends JFrame {
 			add(new JLabel(""));
 			add(new JLabel(""));
 			add(new JLabel(""));
+			add(offlineButton);
 			add(new JLabel(""));
 			add(new JLabel(""));
-			add(new JLabel(""));
-			add(goButton);
+			add(serverButton);
 			add(new JLabel(""));
 		}
 
@@ -265,20 +294,15 @@ public class PlayerClient extends JFrame {
 				try {
 					double y = player.getY() - this.getMousePosition().y;
 					double x = player.getX() - getMousePosition().x;
-					if(x < 0.5 && x > -0.5){
-						angle = (y<=0? 90:270);
-					}
-					else
-					angle = (int) (180 / Math.PI * Math
-							.atan(y
-									/ x));
+					if (x < 0.5 && x > -0.5) {
+						angle = (y <= 0 ? 90 : 270);
+					} else
+						angle = (int) (180 / Math.PI * Math.atan(y / x));
 
 					if (player.getX() > getMousePosition().x)
 						angle += 180;
 					else if (player.getY() > getMousePosition().y)
 						angle += 360;
-					
-					System.out.println(angle);
 				} catch (Exception e) {
 
 				}
@@ -298,16 +322,18 @@ public class PlayerClient extends JFrame {
 				g.drawImage(back, -2000 - pos.getX() + displayX,
 						-2000 - pos.getY() + displayY, this);
 				drawPads(g, upgrade, player, angle, c);
-				// Draw your health
+
+				// Draw your health bar
 				g.setColor(Color.GREEN);
 				g.fillRect(displayX, displayY - 10,
 						(int) (30 * (currHealth * 1.0 / maxHealth)),
 						HEALTH_HEIGHT);
 				g.setColor(Color.RED);
-				g.fillRect(displayX
-						+ (int) (30 * (currHealth * 1.0 / maxHealth)),
-						displayY - 15,
-						(int) (30 * ((maxHealth - currHealth) / maxHealth)),
+				g.fillRect(
+						displayX
+								+ (int) (HEALTH_LENGTH * (currHealth * 1.0 / maxHealth)),
+						displayY - 10,
+						(int) (HEALTH_LENGTH * ((maxHealth - currHealth * 1.0) / maxHealth)),
 						HEALTH_HEIGHT);
 				// System.out.println(pos.getX() + " "+ pos.getY());
 				g.fillRect(100 - pos.getX() + displayX, 100 - pos.getY()
@@ -342,6 +368,7 @@ public class PlayerClient extends JFrame {
 				g.clearRect(0, 0, getWidth(), getHeight());
 				System.out.println("You are dead");
 				this.setEnabled(false);
+				online = false;
 				displayTitle();
 			}
 			// System.out.println(System.currentTimeMillis() - tt);
@@ -485,13 +512,16 @@ public class PlayerClient extends JFrame {
 			public void run() {
 				// Initialize the timer
 				new Thread(new TimerThread()).start();
+				int counter = 0;
 				while (alive) {
+					counter++;
 
 					long time = System.currentTimeMillis();
 
 					try {
 
 						short curr = in.readShort();
+						in.available();
 						switch (curr) {
 						// PLace object
 						case 1:
@@ -529,7 +559,7 @@ public class PlayerClient extends JFrame {
 							alive = false;
 							timedOut = true;
 							// TODO end here but just testing right now
-							//System.exit(0);
+							// System.exit(0);
 							break;
 						// Requesting information
 						case 7:
@@ -542,6 +572,8 @@ public class PlayerClient extends JFrame {
 							out.writeBoolean(shoot);
 							out.flush();
 							shoot = false;
+							
+							//TODO Offline bullets
 							// GamePanel.this.repaint(0);
 							break;
 						// Sending any new objects
@@ -578,7 +610,9 @@ public class PlayerClient extends JFrame {
 							}
 							// System.out.println("players.size"+players.size());
 							players = currPlayers;
-							System.out.println("receieved players: "+players.size()+" bullets: "+bullet.size());
+//							System.out.println("receieved players: "
+//									+ players.size() + " bullets: "
+//									+ bullet.size());
 							break;
 						case 9:
 							alive = false;
@@ -692,7 +726,7 @@ public class PlayerClient extends JFrame {
 			this.requestFocusInWindow();
 			if (time > reloadTime) {
 				shoot = true;
-				System.out.println("fire");
+				//System.out.println("fire");
 			}
 		}
 

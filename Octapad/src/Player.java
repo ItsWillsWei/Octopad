@@ -26,6 +26,7 @@ public class Player {
 	private short upgrade = 0;
 	private ArrayList<Bullet> bullet;
 	private ArrayList<Player> players;
+	private ArrayList<Thread> threads = new ArrayList<Thread>();
 
 	public Player(Socket s, Position p, int id) {
 
@@ -196,12 +197,13 @@ public class Player {
 		// System.out.println(System.currentTimeMillis() - start);
 		CommunicationThread communistThread = new CommunicationThread();
 		Thread t = new Thread(communistThread);
+		threads.add(t);
 		t.start();
 
 		// Query for a move every 10ms until the timeout is reached or the move
 		// is received
 		// long t2 = System.currentTimeMillis();
-		int count =0;
+		int count = 0;
 		while (!communistThread.updated()
 				&& System.currentTimeMillis() - start < timeOut) {
 			count++;
@@ -227,7 +229,8 @@ public class Player {
 
 			// System.out.println("info received");
 		}
-		System.out.println(System.currentTimeMillis()-start);
+		threads.remove(t);
+		System.out.println("Threads active: "+threads.size()+" time "+ (int) (System.currentTimeMillis() - start));
 
 	}
 
@@ -259,8 +262,8 @@ public class Player {
 					shoot = in.readBoolean();
 					infoReceived = true;
 					pos = new Position(x, y);
-					//System.out.println("Server got: " + x + " " + y + " "
-						//	+ angle + " " + upgrade);
+					System.out.println("Server got: " + x + " " + y + " "
+							+ angle + " " + upgrade);
 				}
 			} catch (Exception e) {
 
