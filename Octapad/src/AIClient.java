@@ -78,7 +78,7 @@ public class AIClient {
 		public void run() {
 			while (true) {
 				// Read in the server's command (if any)
-				randomMovements();
+				// randomMovements();
 
 				try {
 
@@ -112,7 +112,7 @@ public class AIClient {
 						break;
 					// Awards points
 					case 5:
-						points += (int) in.read();
+						points += in.readShort();
 						// GamePanel.this.repaint(0);
 						break;
 					// Timed out or dead
@@ -167,6 +167,7 @@ public class AIClient {
 						}
 						// System.out.println("players.size"+players.size());
 						players = currPlayers;
+						closestPlayer();
 						break;
 					case 9:
 						alive = false;
@@ -177,5 +178,48 @@ public class AIClient {
 				}
 			}
 		}
+	}
+
+	private void closestPlayer() {
+		int min = Integer.MAX_VALUE;
+		tempPlayer close = null;
+		for (short i = 0; i < players.size(); i++) {
+			tempPlayer p = players.get(i);
+			if (!(p.getPos().getX() == pos.getX() && p.getPos().getY() == pos
+					.getY())
+					&& (pos.getX() - p.getPos().getX())
+							* (pos.getX() - p.getPos().getX())
+							+ (pos.getY() - p.getPos().getY())
+							* (pos.getY() - p.getPos().getY()) < min) {
+				min = (pos.getX() - p.getPos().getX())
+						* (pos.getX() - p.getPos().getX())
+						+ (pos.getY() - p.getPos().getY())
+						* (pos.getY() - p.getPos().getY());
+				close = p;
+			}
+		}
+
+		if (close == null) {
+			angle = 180;
+		}
+		double y = pos.getY() - close.getPos().getY();
+		double x = pos.getX() - close.getPos().getX();
+		if (x < 0.5 && x > -0.5) {
+			angle = (y <= 0 ? 90 : 270);
+		} else
+			angle = (int) (180 / Math.PI * Math.atan(y / x));
+
+		if (pos.getX() > close.getPos().getX()) {
+			angle += 180;
+		} else if (angle != 270 && pos.getY() > close.getPos().getY())
+			angle += 360;
+
+		System.out.println(angle);
+		double rad = angle / 360.0 * Math.PI;
+		velocity = new Vector(speed * Math.cos(rad) * (angle > 270 ? -1 : 1),
+				speed * Math.sin(rad) * (angle > 270 ? -1 : 1));
+		pos.setX((short) (pos.getX() + velocity.getX()));
+		pos.setY((short) (pos.getY() + velocity.getY()));
+
 	}
 }

@@ -98,12 +98,13 @@ public class Server {
 		return (p.getX() - radius > 0 && p.getX() + radius < WIDTH
 				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
-	
-	class GenerateBlocks implements Runnable{
-		public void run(){
-			
+
+	class GenerateBlocks implements Runnable {
+		public void run() {
+
 		}
 	}
+
 	class BroadcastThread implements Runnable {
 
 		@Override
@@ -113,7 +114,7 @@ public class Server {
 				// TODO maybe check for collisions here then just tell
 				// people
 				try {
-					Thread.sleep(25);
+					Thread.sleep(10);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -147,18 +148,18 @@ public class Server {
 
 					// p.setSurroundings(surroundingPlayers(p),
 					// surroundingShots(p));
-					
+
 					p.updateSurroundings(bullets, players);
 					// p.updateSurroundings();
 					// System.out.print(System.currentTimeMillis()-start+ " ");
 					// Requesting info
 
-					
 					long s = System.currentTimeMillis();
 
 					p.requestInfo();
-					System.out.println("Outside player class:"+ (System.currentTimeMillis() - s));
-					// System.out.println(System.currentTimeMillis()-s);
+					System.out.println("Outside player class:"
+							+ (System.currentTimeMillis() - s));
+
 					if (p.shooting()) {
 						bullets.add(new Bullet(p.getPos(), p.getID(),
 								new Vector(Math.cos(p.getAngle() * 1.0 / 180
@@ -198,8 +199,8 @@ public class Server {
 						bullets.remove(currentBullet);
 					}
 				}
-				//System.out.println("Server"
-						//+ (System.currentTimeMillis() - start));
+				// System.out.println("Server"
+				// + (System.currentTimeMillis() - start));
 			}
 		}
 	}
@@ -219,7 +220,7 @@ public class Server {
 		currentlyAccessing = true;
 		for (int i = 0; i < bullets.size(); i++) {
 			Bullet currentBullet = bullets.get(i);
-
+System.out.println("NOT HERE");
 			long time = System.currentTimeMillis();
 			// Time bullets out here i guess
 			if (currentBullet.getPos().getX() > WIDTH

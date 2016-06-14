@@ -18,6 +18,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
+
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -46,10 +47,10 @@ public class PlayerClient extends JFrame {
 		PlayerClient p = new PlayerClient();
 		p.setVisible(true);
 	}
-	
-	static class RunServer implements Runnable{
-		public void run(){
-			//new Server();
+
+	static class RunServer implements Runnable {
+		public void run() {
+			// new Server();
 		}
 	}
 
@@ -168,14 +169,13 @@ public class PlayerClient extends JFrame {
 				}
 
 			});
-			
+
 			offlineButton = new KButton("Play Offline", 300, 100);
 			offlineButton.setBackground(Color.GREEN);
-			offlineButton.addActionListener(new ActionListener(){
-				public void actionPerformed(ActionEvent e){
+			offlineButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
 					online = false;
-					physics = (new PhysicsThread(accel, speed, pos,
-							maxSpeed));
+					physics = (new PhysicsThread(accel, speed, pos, maxSpeed));
 					new Thread(physics).start();
 					GamePanel.this.removeAll();
 					GamePanel.this.repaint();
@@ -513,16 +513,18 @@ public class PlayerClient extends JFrame {
 			public void run() {
 				// Initialize the timer
 				new Thread(new TimerThread()).start();
-				int counter = 0;
 				while (alive) {
-					counter++;
 
 					long time = System.currentTimeMillis();
 
 					try {
+						Thread.sleep(3);
 
 						short curr = in.readShort();
-						in.available();
+						while (curr == 0) {
+						}
+
+						// System.out.println(in.available());
 						switch (curr) {
 						// PLace object
 						case 1:
@@ -537,12 +539,9 @@ public class PlayerClient extends JFrame {
 							break;
 						// Update health
 						case 3:
-							try {
-								currHealth = in.readShort();
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+
+							currHealth = in.readShort();
+
 							// GamePanel.this.repaint(0);
 							break;
 						// Request upgrade
@@ -564,6 +563,7 @@ public class PlayerClient extends JFrame {
 							break;
 						// Requesting information
 						case 7:
+
 							out.writeShort(pos.getX());
 							// System.out.println(pos.getX()+ " "+pos.getY()+
 							// " "+angle + " "+upgrade+ " "+shoot);
@@ -573,8 +573,8 @@ public class PlayerClient extends JFrame {
 							out.writeBoolean(shoot);
 							out.flush();
 							shoot = false;
-							
-							//TODO Offline bullets
+
+							// TODO Offline bullets
 							// GamePanel.this.repaint(0);
 							break;
 						// Sending any new objects
@@ -611,18 +611,18 @@ public class PlayerClient extends JFrame {
 							}
 							// System.out.println("players.size"+players.size());
 							players = currPlayers;
-//							System.out.println("receieved players: "
-//									+ players.size() + " bullets: "
-//									+ bullet.size());
+							// System.out.println("receieved players: "
+							// + players.size() + " bullets: "
+							// + bullet.size());
 							break;
 						case 9:
 							alive = false;
 							break;
 						case 10:
-							//place blocks
+							// place blocks
 							break;
 						}
-					} catch (IOException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 					// System.out.println(System.currentTimeMillis() - time);
@@ -729,7 +729,7 @@ public class PlayerClient extends JFrame {
 			this.requestFocusInWindow();
 			if (time > reloadTime) {
 				shoot = true;
-				//System.out.println("fire");
+				// System.out.println("fire");
 			}
 		}
 

@@ -1,10 +1,7 @@
 import java.awt.Color;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -26,7 +23,6 @@ public class Player {
 	private short upgrade = 0;
 	private ArrayList<Bullet> bullet;
 	private ArrayList<Player> players;
-	private ArrayList<Thread> threads = new ArrayList<Thread>();
 
 	public Player(Socket s, Position p, int id) {
 
@@ -121,6 +117,7 @@ public class Player {
 
 	public void updateSurroundings() {
 		try {
+			in.available();
 			out.writeShort(8);
 			out.writeShort(bullet.size());
 			long time = System.currentTimeMillis();
@@ -149,7 +146,9 @@ public class Player {
 	}
 
 	public void updateSurroundings(ArrayList<Bullet> b, ArrayList<Player> p) {
+
 		try {
+			in.available();
 			long time = System.currentTimeMillis();
 			out.writeShort(8);
 			out.writeShort(b.size());
@@ -172,7 +171,6 @@ public class Player {
 
 			}
 			out.flush();
-
 		} catch (Exception e) {
 		}
 
@@ -185,19 +183,21 @@ public class Player {
 
 		long start = System.currentTimeMillis();
 		try {
-			// while (in.readShort() != 0)
-			// System.out.println("Dumping: " + in.read());
+			
+			// short x = in.readShort();
+			// while (x != 0) {
+			// x = in.readShort();
+			// System.out.println("Something in the stream "+x);
+			// }
 			// System.out.println("Requesting info");
 			out.writeShort(7);
 			out.flush();
 		} catch (IOException e) {
-
 			e.printStackTrace();
 		}
 		// System.out.println(System.currentTimeMillis() - start);
 		CommunicationThread communistThread = new CommunicationThread();
 		Thread t = new Thread(communistThread);
-		threads.add(t);
 		t.start();
 
 		// Query for a move every 10ms until the timeout is reached or the move
@@ -208,11 +208,12 @@ public class Player {
 				&& System.currentTimeMillis() - start < timeOut) {
 			count++;
 			try {
-				Thread.sleep(1);
+				Thread.sleep(3);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
+
 		// System.out.println("stalin"+(System.currentTimeMillis()-t2));
 
 		// Tell a player of timeout, otherwise update the position
@@ -229,8 +230,8 @@ public class Player {
 
 			// System.out.println("info received");
 		}
-		threads.remove(t);
-		System.out.println("Threads active: "+threads.size()+" time "+ (int) (System.currentTimeMillis() - start));
+		// System.out.println("Threads active: "+threads.size()+" time "+ (int)
+		// (System.currentTimeMillis() - start));
 
 	}
 
@@ -250,9 +251,9 @@ public class Player {
 			long start = System.currentTimeMillis();
 			try {
 				short x = in.readShort();
-				while (x == 0 && !timeout) {
-					x = in.readShort();
-				}
+				 while (x == 0 && !timeout) {
+				 x = in.readShort();
+				 }
 
 				if (!timeout) {
 
@@ -274,13 +275,13 @@ public class Player {
 			timeout = true;
 			alive = false;
 
-			// Tell the player that he's dead
-			try {
-				out.writeShort(9);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//			// Tell the player that he's dead
+//			try {
+//				out.writeShort(9);
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 			return infoReceived;
 		}
 
