@@ -23,6 +23,7 @@ public class Player {
 	private short upgrade = 0;
 	private ArrayList<Bullet> bullet;
 	private ArrayList<Player> players;
+	static boolean threadStop = false;
 
 	public Player(Socket s, Position p, int id) {
 
@@ -183,7 +184,7 @@ public class Player {
 
 		long start = System.currentTimeMillis();
 		try {
-			
+
 			// short x = in.readShort();
 			// while (x != 0) {
 			// x = in.readShort();
@@ -213,8 +214,6 @@ public class Player {
 				e.printStackTrace();
 			}
 		}
-
-		// System.out.println("stalin"+(System.currentTimeMillis()-t2));
 
 		// Tell a player of timeout, otherwise update the position
 		if (!communistThread.updated()) {
@@ -251,11 +250,11 @@ public class Player {
 			long start = System.currentTimeMillis();
 			try {
 				short x = in.readShort();
-				 while (x == 0 && !timeout) {
-				 x = in.readShort();
-				 }
+				while (x == 0 && !timeout && !threadStop) {
+					x = in.readShort();
+				}
 
-				if (!timeout) {
+				if (!timeout && !threadStop) {
 
 					short y = in.readShort();
 					angle = in.readShort();
@@ -275,13 +274,13 @@ public class Player {
 			timeout = true;
 			alive = false;
 
-//			// Tell the player that he's dead
-//			try {
-//				out.writeShort(9);
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
+			// // Tell the player that he's dead
+			// try {
+			// out.writeShort(9);
+			// } catch (IOException e) {
+			// // TODO Auto-generated catch block
+			// e.printStackTrace();
+			// }
 			return infoReceived;
 		}
 

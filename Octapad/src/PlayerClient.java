@@ -565,7 +565,8 @@ public class PlayerClient extends JFrame {
 						case 7:
 
 							out.writeShort(pos.getX());
-							// System.out.println(pos.getX()+ " "+pos.getY()+
+							// System.out.println(pos.getX()+
+							// " "+pos.getY()+
 							// " "+angle + " "+upgrade+ " "+shoot);
 							out.writeShort(pos.getY());
 							out.writeShort(angle);
