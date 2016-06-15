@@ -24,6 +24,7 @@ public class Server {
 	private ArrayList<Block> blocks = new ArrayList<Block>();
 	private static boolean currentlyAccessing = false;
 	private BufferedImage back;
+	private static boolean blocksAccessing = false;
 
 	public static void main(String[] args) {
 		display = new Display();
@@ -109,20 +110,30 @@ public class Server {
 
 	class GenerateBlocks implements Runnable {
 		public void run() {
-			while(true){
+			while (true) {
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				//Spawn blocks
-				if(noOfBlocks < noOfPlayers*200){
-					for(int block = 0; block < 10; block++){
-						Position spawn = new Position((short)(Math.random()*back.getWidth()/20)*20-back.getWidth()/2, (short)(Math.random()*back.getHeight()/20)*20-back.getWidth()/2);
-						blocks.add(new Block(spawn, 20, new Color((int)(Math.random()*256), (int)(Math.random()*256),(int)(Math.random()*256))));
+				// Spawn blocks
+
+				if (!blocksAccessing && noOfBlocks < noOfPlayers * 200) {
+					blocksAccessing=true;
+					for (int block = 0; block < 10; block++) {
+						Position spawn = new Position((short) (Math.random()
+								* back.getWidth() / 20)
+								* 20 - back.getWidth() / 2,
+								(short) (Math.random() * back.getHeight() / 20)
+										* 20 - back.getWidth() / 2);
+						blocks.add(new Block(spawn, 20, new Color((int) (Math
+								.random() * 256), (int) (Math.random() * 256),
+								(int) (Math.random() * 256))));
 						System.out.println(spawn.getX() + " " + spawn.getY());
 					}
+					blocksAccessing=false;
 				}
+
 			}
 		}
 	}
@@ -136,7 +147,7 @@ public class Server {
 				// TODO maybe check for collisions here then just tell
 				// people
 				try {
-					Thread.sleep(10);
+					Thread.sleep(30);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -148,18 +159,22 @@ public class Server {
 					// System.out.println("hi");
 					if (currentlyAccessing)
 						break;
-					
-					//Show blocks
-					for(Block block:blocks){
-						short[] info = new short[6];
-						info[0] = 10;
-						info[1] = block.getPos().getX();
-						info[2] = block.getPos().getY();
-						info[3] = (short) block.getColor().getRed();
-						info[4] = (short) block.getColor().getGreen();
-						info[5] = (short) block.getColor().getBlue();
-						p.sendCommand(info);
+
+					if (!blocksAccessing) {
+						blocksAccessing = true;
+						p.sendCommand(new short[] { 10, (short) blocks.size() });
+						// Show blocks
+						for (Block block : blocks) {
+							short[] info = new short[5];
+							info[0] = block.getPos().getX();
+							info[1] = block.getPos().getY();
+							info[2] = (short) block.getColor().getRed();
+							info[3] = (short) block.getColor().getGreen();
+							info[4] = (short) block.getColor().getBlue();
+							p.sendCommand(info);
+						}
 					}
+					blocksAccessing = false;
 					// System.out.println("bye");
 
 					// System.out.print(System.currentTimeMillis()-start+ " ");
@@ -192,8 +207,8 @@ public class Server {
 					long s = System.currentTimeMillis();
 
 					p.requestInfo();
-					System.out.println("Outside player class:"
-							+ (System.currentTimeMillis() - s));
+					// System.out.println("Outside player class:"
+					// + (System.currentTimeMillis() - s));
 
 					if (p.shooting()) {
 						bullets.add(new Bullet(p.getPos(), p.getID(),
@@ -223,10 +238,13 @@ public class Server {
 						}
 
 					}
-					if (!ok || currentBullet.getPos().getX() > back.getWidth()/2
-							|| currentBullet.getPos().getY() > back.getHeight()/2
-							|| currentBullet.getPos().getY() < -1*back.getHeight()/2
-							|| currentBullet.getPos().getX() < -1*back.getWidth()/2
+					if (!ok
+							|| currentBullet.getPos().getX() > back.getWidth() / 2
+							|| currentBullet.getPos().getY() > back.getHeight() / 2
+							|| currentBullet.getPos().getY() < -1
+									* back.getHeight() / 2
+							|| currentBullet.getPos().getX() < -1
+									* back.getWidth() / 2
 							|| !currentBullet.alive()
 							|| time - currentBullet.time() > 4000) {
 						i--;
@@ -255,13 +273,14 @@ public class Server {
 		currentlyAccessing = true;
 		for (int i = 0; i < bullets.size(); i++) {
 			Bullet currentBullet = bullets.get(i);
-System.out.println("NOT HERE");
+			System.out.println("NOT HERE");
 			long time = System.currentTimeMillis();
 			// Time bullets out here i guess
-			if (currentBullet.getPos().getX() > back.getWidth()/2
-					|| currentBullet.getPos().getY() > back.getHeight()/2
-					|| currentBullet.getPos().getY() < -1*back.getHeight()/2
-					|| currentBullet.getPos().getX() < -1*back.getWidth()/2
+			if (currentBullet.getPos().getX() > back.getWidth() / 2
+					|| currentBullet.getPos().getY() > back.getHeight() / 2
+					|| currentBullet.getPos().getY() < -1 * back.getHeight()
+							/ 2
+					|| currentBullet.getPos().getX() < -1 * back.getWidth() / 2
 					|| !currentBullet.alive()
 					|| time - currentBullet.time() > 4000) {
 				i--;

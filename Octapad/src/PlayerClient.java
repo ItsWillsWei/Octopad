@@ -92,7 +92,8 @@ public class PlayerClient extends JFrame {
 		private int points = 0;
 		private ArrayList<Position> bullet = new ArrayList<Position>();
 		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
-		private ArrayList<Block> blocks = new ArrayList<Block>(), dontScrewUpBlocks = new ArrayList<Block>();
+		private ArrayList<Block> blocks = new ArrayList<Block>(),
+				dontScrewUpBlocks = new ArrayList<Block>();
 
 		// Display information variables
 		private KButton serverButton, offlineButton;
@@ -117,7 +118,7 @@ public class PlayerClient extends JFrame {
 		private PhysicsThread physics;
 		boolean changing = false;
 
-		//private Image back;
+		// private Image back;
 		private BufferedImage back;
 
 		/**
@@ -129,7 +130,9 @@ public class PlayerClient extends JFrame {
 			createPlayer();
 
 			try {
-				back = ImageIO.read(new File("back-low.jpg"));//new ImageIcon("back-low.jpg").getImage();// ImageIO.read(getClass().getResource("back.jpg"));
+				back = ImageIO.read(new File("back-low.jpg"));// new
+																// ImageIcon("back-low.jpg").getImage();//
+																// ImageIO.read(getClass().getResource("back.jpg"));
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -183,7 +186,8 @@ public class PlayerClient extends JFrame {
 			offlineButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					online = false;
-					physics = (new PhysicsThread(accel, speed, pos, maxSpeed, back));
+					physics = (new PhysicsThread(accel, speed, pos, maxSpeed,
+							back));
 					new Thread(physics).start();
 					GamePanel.this.removeAll();
 					GamePanel.this.repaint();
@@ -205,11 +209,10 @@ public class PlayerClient extends JFrame {
 						in = new DataInputStream(sock.getInputStream());
 						out = new DataOutputStream(sock.getOutputStream());
 						currHealth = maxHealth;
-						
-						//Send the name
-						//out.writeShort(1);
-						
-						
+
+						// Send the name
+						// out.writeShort(1);
+
 						// Read in the color and position
 						short x = in.readShort();
 						short y = in.readShort();
@@ -333,11 +336,12 @@ public class PlayerClient extends JFrame {
 
 				player.setX((short) displayX);
 				player.setY((short) displayY);
-				
-				//Draw the background picture
-				g.drawImage(back, -1*back.getWidth()/2 - pos.getX() + displayX,
-						-1*back.getHeight()/2 - pos.getY() + displayY, this);
-				
+
+				// Draw the background picture
+				g.drawImage(back, -1 * back.getWidth() / 2 - pos.getX()
+						+ displayX, -1 * back.getHeight() / 2 - pos.getY()
+						+ displayY, this);
+
 				drawPads(g, upgrade, player, angle, c);
 
 				// Draw your health bar
@@ -380,28 +384,27 @@ public class PlayerClient extends JFrame {
 							- 3 - pos.getY() + displayY, 7, 7);
 				}
 				// System.out.println(System.currentTimeMillis() - t1);
-				
-				//Draw blocks
-				
-//				for(Block b:blocks){
-//					g.setColor(b.getColor());
-//					g.fillRect(b.getPos().getX(), b.getPos().getY(), 10, 10);
-//				}
-				if(!accessingBlocks)
-				for(Iterator<Block> check = blocks.iterator(); check.hasNext();){
-					Block block;
-					if(!accessingBlocks)
-					{
-//						try{
-					block = check.next();
-					g.setColor(block.getColor());
-					g.fillRect(block.getPos().getX()-pos.getX()+player.getX(), block.getPos().getY()-pos.getY()+player.getY(), 20, 20);
-//						}
-//						catch(ConcurrentModificationException e){
-//							System.err.println("effed up");
-//						}
+
+				// Draw blocks
+
+				// for(Block b:blocks){
+				// g.setColor(b.getColor());
+				// g.fillRect(b.getPos().getX(), b.getPos().getY(), 10, 10);
+				// }
+				if (!accessingBlocks)
+					for (Block b : blocks) {
+						// try{
+						g.setColor(b.getColor());
+						g.fillRect(
+								b.getPos().getX() - pos.getX() + player.getX(),
+								b.getPos().getY() - pos.getY() + player.getY(),
+								20, 20);
+						// }
+						// catch(ConcurrentModificationException e){
+						// System.err.println("effed up");
+						// }
+
 					}
-				}
 				repaint(100);
 			} else {
 				g.clearRect(0, 0, getWidth(), getHeight());
@@ -552,7 +555,7 @@ public class PlayerClient extends JFrame {
 				// Initialize the timer
 				new Thread(new TimerThread()).start();
 				while (alive) {
-					accessingBlocks = true;
+					
 					long time = System.currentTimeMillis();
 
 					try {
@@ -658,19 +661,29 @@ public class PlayerClient extends JFrame {
 							alive = false;
 							break;
 						case 10:
-							//accessingBlocks = true;
-							short x= in.readShort();
-							short y=in.readShort();
-							short r = in.readShort();
-							short g = in.readShort();
-							short b = in.readShort();
-							//accessingBlocks = true;
+							accessingBlocks = true;
+							short amount = in.readShort();
+							ArrayList<Block> tempBlocks = new ArrayList<Block>(
+									amount);
+							for (int i = 0; i < amount; i++) {
+								// accessingBlocks = true;
+								short x = in.readShort();
+								short y = in.readShort();
+								short r = in.readShort();
+								short g = in.readShort();
+								short b = in.readShort();
+								System.out.println(x+" "+y);
+								// accessingBlocks = true;
+								tempBlocks.add(new Block(new Position(x, y),
+										20, new Color(r, g, b)));
+							}
+							accessingBlocks=false;
+							blocks = tempBlocks;
 							// Is it one block at a time?
-							//Yes every time a case 10 is called, but it is called multiplye times. (10 times every 5 seconds in server)
-							System.out.println(x + " " + y);
-							blocks.add(new Block(new Position(x,y), 20, new Color(r, g, b)));
-							dontScrewUpBlocks.add(new Block(new Position(x,y), 20, new Color(r,g,b)));
-							Thread.sleep(3);
+							// Yes every time a case 10 is called, but it is
+							// called multiplye times. (10 times every 5 seconds
+							// in server)
+							// Thread.sleep(3);
 							break;
 						}
 					} catch (Exception e) {
@@ -867,14 +880,14 @@ public class PlayerClient extends JFrame {
 
 				poso.setX((pos.getX() + velocity.getX() * (change / 1000.0)));
 				poso.setY((pos.getY() + velocity.getY() * (change / 1000.0)));
-				if(poso.getX() > back.getWidth()/2-30)
-					poso.setX(back.getWidth()/2-30);
-				else if(poso.getX() < -1*back.getWidth()/2+30)
-					poso.setX(-1*back.getWidth()/2+30);
-				if(poso.getY() > back.getHeight()/2-30)
-					poso.setY(back.getHeight()/2-30);
-				else if(poso.getY() < -1*back.getHeight()/2+30)
-					poso.setY(-1*back.getHeight()/2+30);
+				if (poso.getX() > back.getWidth() / 2 - 30)
+					poso.setX(back.getWidth() / 2 - 30);
+				else if (poso.getX() < -1 * back.getWidth() / 2 + 30)
+					poso.setX(-1 * back.getWidth() / 2 + 30);
+				if (poso.getY() > back.getHeight() / 2 - 30)
+					poso.setY(back.getHeight() / 2 - 30);
+				else if (poso.getY() < -1 * back.getHeight() / 2 + 30)
+					poso.setY(-1 * back.getHeight() / 2 + 30);
 				// System.out.println(accel.getX() + " " + accel.getY());
 				// System.out.println(velocity.getX() + " " + velocity.getY());
 				// System.out.println(pos.getX() + " " + pos.getY());
