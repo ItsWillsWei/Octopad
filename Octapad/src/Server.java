@@ -1,7 +1,12 @@
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+
+import javax.imageio.ImageIO;
 
 /**
  * 
@@ -13,11 +18,12 @@ public class Server {
 	private int HEIGHT = 700;
 	private static Display display;
 	private ServerSocket serverSocket;
-	private int noOfPlayers;
+	private int noOfPlayers, noOfBlocks;
 	private ArrayList<Player> players = new ArrayList<Player>();
 	private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 	private ArrayList<Block> blocks = new ArrayList<Block>();
 	private static boolean currentlyAccessing = false;
+	private BufferedImage back;
 
 	public static void main(String[] args) {
 		display = new Display();
@@ -43,7 +49,9 @@ public class Server {
 		try {
 			serverSocket = new ServerSocket(421);
 			players = new ArrayList<Player>();
-
+			noOfPlayers = 0;
+			noOfBlocks = 0;
+			back = ImageIO.read(new File("back-low.jpg"));
 			while (true) {
 
 				System.out.println("Waiting for connection");
@@ -101,7 +109,21 @@ public class Server {
 
 	class GenerateBlocks implements Runnable {
 		public void run() {
-
+			while(true){
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				//Spawn blocks
+				if(noOfBlocks < noOfPlayers*200){
+					for(int block = 0; block < 10; block++){
+						Position spawn = new Position((short)(Math.random()*back.getWidth()/20)*20-back.getWidth()/2, (short)(Math.random()*back.getHeight()/20)*20-back.getWidth()/2);
+						blocks.add(new Block(spawn, 20, new Color((int)(Math.random()*256), (int)(Math.random()*256),(int)(Math.random()*256))));
+						System.out.println(spawn.getX() + " " + spawn.getY());
+					}
+				}
+			}
 		}
 	}
 
@@ -126,6 +148,18 @@ public class Server {
 					// System.out.println("hi");
 					if (currentlyAccessing)
 						break;
+					
+					//Show blocks
+					for(Block block:blocks){
+						short[] info = new short[6];
+						info[0] = 10;
+						info[1] = block.getPos().getX();
+						info[2] = block.getPos().getY();
+						info[3] = (short) block.getColor().getRed();
+						info[4] = (short) block.getColor().getGreen();
+						info[5] = (short) block.getColor().getBlue();
+						p.sendCommand(info);
+					}
 					// System.out.println("bye");
 
 					// System.out.print(System.currentTimeMillis()-start+ " ");
@@ -143,6 +177,7 @@ public class Server {
 						int remove = players.indexOf(p);
 						i = 0;
 						players.remove(remove);
+						noOfPlayers--;
 						break;
 					}
 
@@ -188,10 +223,10 @@ public class Server {
 						}
 
 					}
-					if (!ok || currentBullet.getPos().getX() > WIDTH
-							|| currentBullet.getPos().getY() > HEIGHT
-							|| currentBullet.getPos().getY() < 0
-							|| currentBullet.getPos().getX() < 0
+					if (!ok || currentBullet.getPos().getX() > back.getWidth()/2
+							|| currentBullet.getPos().getY() > back.getHeight()/2
+							|| currentBullet.getPos().getY() < -1*back.getHeight()/2
+							|| currentBullet.getPos().getX() < -1*back.getWidth()/2
 							|| !currentBullet.alive()
 							|| time - currentBullet.time() > 4000) {
 						i--;
@@ -223,10 +258,10 @@ public class Server {
 System.out.println("NOT HERE");
 			long time = System.currentTimeMillis();
 			// Time bullets out here i guess
-			if (currentBullet.getPos().getX() > WIDTH
-					|| currentBullet.getPos().getY() > HEIGHT
-					|| currentBullet.getPos().getY() < 0
-					|| currentBullet.getPos().getX() < 0
+			if (currentBullet.getPos().getX() > back.getWidth()/2
+					|| currentBullet.getPos().getY() > back.getHeight()/2
+					|| currentBullet.getPos().getY() < -1*back.getHeight()/2
+					|| currentBullet.getPos().getX() < -1*back.getWidth()/2
 					|| !currentBullet.alive()
 					|| time - currentBullet.time() > 4000) {
 				i--;

@@ -80,9 +80,13 @@ public class AIClient {
 				// Read in the server's command (if any)
 				// randomMovements();
 
+				int times = 0;
 				try {
 
+					times++;
 					short curr = in.readShort();
+					while (curr == 0) {
+					}
 					switch (curr) {
 					// PLace object
 					case 1:
@@ -167,7 +171,8 @@ public class AIClient {
 						}
 						// System.out.println("players.size"+players.size());
 						players = currPlayers;
-						closestPlayer();
+						// if (times % 10 == 0)
+							closestPlayer();
 						break;
 					case 9:
 						alive = false;
@@ -216,8 +221,7 @@ public class AIClient {
 
 		System.out.println(angle);
 		double rad = angle / 360.0 * Math.PI;
-		velocity = new Vector(speed * Math.cos(rad) * (angle > 270 ? -1 : 1),
-				speed * Math.sin(rad) * (angle > 270 ? -1 : 1));
+		velocity = new Vector(speed * Math.cos(rad), speed * Math.sin(rad));
 		pos.setX((short) (pos.getX() + velocity.getX()));
 		pos.setY((short) (pos.getY() + velocity.getY()));
 
