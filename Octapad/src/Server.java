@@ -69,6 +69,7 @@ public class Server {
 							(short) (Math.random() * (WIDTH - 30)) + 20,
 							(short) (Math.random() * (HEIGHT - 30)) + 20);
 				currentlyAccessing = true;
+				
 				currentPlayer = new Player(client, current, noOfPlayers);
 				players.add(currentPlayer);
 				// Initial position and colour
@@ -252,6 +253,10 @@ public class Server {
 						bullets.remove(currentBullet);
 					}
 				}
+				
+				
+				
+				
 				// System.out.println("Server"
 				// + (System.currentTimeMillis() - start));
 			}

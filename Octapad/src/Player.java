@@ -69,6 +69,10 @@ public class Player {
 	public int getUpgrade() {
 		return upgrade;
 	}
+	
+	public int getPoints(){
+		return points;
+	}
 
 	public boolean shooting() {
 		return shoot;
@@ -260,6 +264,7 @@ public class Player {
 					angle = in.readShort();
 					upgrade = in.readShort();
 					shoot = in.readBoolean();
+					points = in.readShort();
 					infoReceived = true;
 					pos = new Position(x, y);
 					System.out.println("Server got: " + x + " " + y + " "

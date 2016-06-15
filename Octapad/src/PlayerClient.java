@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,6 +13,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
@@ -90,7 +92,7 @@ public class PlayerClient extends JFrame {
 		private boolean shoot = false;
 		private short reloadTime = 100;
 		private int points = 0;
-		private ArrayList<Position> bullet = new ArrayList<Position>();
+		private ArrayList<Position> bullet = new ArrayList<Position>(), blocksToRemove = new ArrayList<Position>();
 		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
 		private ArrayList<Block> blocks = new ArrayList<Block>(),
 				dontScrewUpBlocks = new ArrayList<Block>();
@@ -370,7 +372,8 @@ public class PlayerClient extends JFrame {
 					}
 				}
 
-				g.drawString("Health: " + currHealth, 800, 200);
+				g.drawString("Health: " + currHealth, 950, 200);
+				g.drawString("Points: " + points, 950, 250);
 
 				long t1 = System.currentTimeMillis();
 				// Bullets
@@ -379,9 +382,23 @@ public class PlayerClient extends JFrame {
 					// g.fillsOval(p.getX() - 3 - pos.getX() + displayX,
 					// p.getY()
 					// - 3 - pos.getY() + displayY, 7, 7);
-
-					g.fillOval(p.getX() - 3 - pos.getX() + displayX, p.getY()
-							- 3 - pos.getY() + displayY, 7, 7);
+					Ellipse2D.Double tempBullet = new Ellipse2D.Double(p.getX()-3-pos.getX()+displayX,p.getY()-3-pos.getY()+displayY,7,7);
+					((Graphics2D) g).fill(tempBullet);
+					
+					if(!accessingBlocks)
+					for(int block = 0; block<blocks.size(); block++){
+						Position blockPos = blocks.get(block).getPos();
+						if(new Rectangle(blockPos.getX()-pos.getX()+player.getX(),
+								blockPos.getY()-pos.getY()+player.getY(), 20,20).contains(tempBullet.getCenterX(), tempBullet.getCenterY())){
+							blocks.remove(block);
+							blocksToRemove.add(blockPos);
+							points+=10;
+						}
+					}
+					//g.fillOval(p.getX() - 3 - pos.getX() + displayX, p.getY()
+							//- 3 - pos.getY() + displayY, 7, 7);
+					
+					
 				}
 				// System.out.println(System.currentTimeMillis() - t1);
 
@@ -613,6 +630,7 @@ public class PlayerClient extends JFrame {
 							out.writeShort(angle);
 							out.writeShort(upgrade);
 							out.writeBoolean(shoot);
+							out.writeShort(points);
 							out.flush();
 							shoot = false;
 
