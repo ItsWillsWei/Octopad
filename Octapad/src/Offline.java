@@ -16,10 +16,8 @@ import javax.imageio.ImageIO;
  * @version Jun 10, 2016
  */
 public class Offline {
-	private int WIDTH = 1024;
-	private int HEIGHT = 700;
 	private int bulletDuration = 5000;
-	private int noOfPlayers, noOfBlocks;
+	private int noOfPlayers = 1, noOfBlocks = 0;
 	private ArrayList<OfflineAI> players = new ArrayList<OfflineAI>();
 	private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 	private ArrayList<Block> blocks = new ArrayList<Block>();
@@ -32,8 +30,15 @@ public class Offline {
 	}
 
 	public Offline() {
+		try {
+			back = ImageIO.read(new File("back-low.jpg"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		player = new OfflinePlayer();
+		player.setVisible(true);
 		Thread g = new Thread(new GenerateBlocks());
 		g.start();
 		run();
@@ -41,7 +46,7 @@ public class Offline {
 
 	/**
 	 * Runs an AIClient to start the game
-	 *
+	 * 
 	 */
 	class AIThread implements Runnable {
 		public void run() {
@@ -56,11 +61,11 @@ public class Offline {
 	/**
 	 * Generates 10 blocks every five seconds. For every player, 20 blocks are
 	 * generated.
-	 *
+	 * 
 	 */
 	class GenerateBlocks implements Runnable {
 		public void run() {
-			while (true) {
+			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
@@ -108,6 +113,22 @@ public class Offline {
 								* player.getBulletSpeed())));
 			}
 
+			// Display all bullets
+			ArrayList<Position> p = new ArrayList<Position>();
+			long time = System.currentTimeMillis();
+			for (Bullet b : bullets) {
+				p.add(new Position(b.getPos().getX()
+						+ (int) ((time - b.time()) / 10.0 * b.xChange()), b
+						.getPos().getY()
+						+ (int) ((time - b.time()) / 10.0 * b.yChange())));
+
+			}
+			player.setBullets(p);
+
+			// Display all blocks
+			ArrayList<Block> temp = (ArrayList<Block>) blocks.clone();
+			player.setBlocks(temp);
+
 			for (OfflineAI a : players) {
 				a.closestPlayer();
 			}
@@ -117,7 +138,7 @@ public class Offline {
 				Bullet currentBullet = bullets.get(i);
 
 				boolean bulletHit = false;
-				long time = System.currentTimeMillis();
+				time = System.currentTimeMillis();
 				// Check to see if a bullet hits a player
 				if (Math.abs(currentBullet.getPos().getX()
 						+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
@@ -154,19 +175,20 @@ public class Offline {
 						{
 							// System.out.println("Should be removed");
 							blocks.remove(j);
-							player.setBlocks(blocks);
 
 							// bullets.remove(currentBullet);
 							bulletHit = true;
-							for (OfflineAI p : players) {
-								if (p.getID() == currentBullet.getID())
-									p.setPoints((short) (p.getPoints() + 10));
+							if(currentBullet.getID()==player.getID())
+								player.setPoints((player.getPoints()+100));
+							for (OfflineAI playa : players) {
+								if (playa.getID() == currentBullet.getID())
+									playa.setPoints((short) (playa.getPoints() + 10));
 								// Update upgrades/points
-								if (p.getPoints() > 1000)
-									p.setUpgrade(1);
-								else if (p.getPoints() > 10000)
-									p.setUpgrade(2);
-								p.setBlocks(blocks);
+								if (playa.getPoints() > 1000)
+									playa.setUpgrade(1);
+								else if (playa.getPoints() > 10000)
+									playa.setUpgrade(2);
+								playa.setBlocks(blocks);
 							}
 						}
 

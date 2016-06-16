@@ -54,8 +54,8 @@ public class Server {
 			noOfBlocks = 0;
 
 			back = ImageIO.read(new File("back-low.jpg"));
-			Thread ai = new Thread(new AIThread());
-			ai.start();
+//			Thread ai = new Thread(new AIThread());
+//			ai.start();
 			while (true) {
 
 				System.out.println("Waiting for connection");

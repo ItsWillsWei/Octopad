@@ -10,13 +10,12 @@ import java.util.*;
 import javax.imageio.*;
 import javax.swing.*;
 
-
 /**
  * This is a client that must be run and connected to the server
  * 
  * @author Tilman and Will
  * @date June 16, 2016
- *
+ * 
  */
 public class OfflinePlayer extends JFrame {
 	// Final variables for the pane
@@ -29,7 +28,7 @@ public class OfflinePlayer extends JFrame {
 	private static int id;
 	private static short upgrade = 0;
 	private static ArrayList<SimplePlayer> players = new ArrayList<SimplePlayer>();
-	private static short points = 0;
+	private static int points = 0;
 	private static Color color;
 	private static int health = 90;
 	private static boolean alive = true;
@@ -37,10 +36,10 @@ public class OfflinePlayer extends JFrame {
 	// Physics Variables
 	private static Position pos;
 	private static int angle;
-	private static boolean shooting;
 	private static double bulletSpeed = 3;
 
 	// All from below
+	private static long start;
 	// Physics variables
 	private static Position player;
 	private static Vector speed;
@@ -51,9 +50,9 @@ public class OfflinePlayer extends JFrame {
 	private static ArrayList<Integer> directionsPressed;
 	private static PhysicsThread physics;
 	private static boolean changing = false;
-	private static boolean shoot;
+	private static boolean shoot = false;
 	private static short reloadTime;
-	private static ArrayList<Position> bullet, blocksToRemove;
+	private static ArrayList<Position> bullets, blocksToRemove;
 	private static int time;
 	private static boolean timedOut;
 
@@ -62,7 +61,8 @@ public class OfflinePlayer extends JFrame {
 	 */
 	public OfflinePlayer() {
 		super("Octopad");
-
+		Thread t = new Thread(new TimerThread());
+		t.start();
 		color = new Color((int) (Math.random() * 256),
 				(int) (Math.random() * 256), (int) (Math.random() * 256));
 		game = new GamePanel();
@@ -76,11 +76,11 @@ public class OfflinePlayer extends JFrame {
 	/**
 	 * Sets the amount of points for the player
 	 * 
-	 * @param points
+	 * @param i
 	 *            the new amount of points
 	 */
-	public void setPoints(short points) {
-		this.points = points;
+	public void setPoints(int i) {
+		this.points = i;
 	}
 
 	public double getBulletSpeed() {
@@ -114,13 +114,18 @@ public class OfflinePlayer extends JFrame {
 	}
 
 	// Starts the player client
-	public static void main(String[] args) throws Exception {
-		PlayerClient p = new PlayerClient();
-		p.setVisible(true);
-	}
+	// public static void main(String[] args) throws Exception {
+	// PlayerClient p = new PlayerClient();
+	// p.setVisible(true);
+	// }
 
 	public boolean shooting() {
-		return shooting;
+		if (shoot) {
+
+			shoot = false;
+			return true;
+		}
+		return false;
 	}
 
 	public int getAngle() {
@@ -135,7 +140,7 @@ public class OfflinePlayer extends JFrame {
 		this.upgrade = (short) upgrade;
 	}
 
-	public short getPoints() {
+	public int getPoints() {
 		return points;
 	}
 
@@ -146,7 +151,7 @@ public class OfflinePlayer extends JFrame {
 		// Player information
 		private short maxHealth;
 		private short currHealth;
-		private static long start;
+
 		private boolean alive = true;
 		private int playerType;
 		public boolean online, accessingBlocks;
@@ -227,20 +232,14 @@ public class OfflinePlayer extends JFrame {
 					pos = new Position(
 							(short) (Math.random() * (WIDTH - 30)) + 20,
 							(short) (Math.random() * (HEIGHT - 30)) + 20);
-					while (!withinBounds(pos, 50))
-						pos = new Position(
-								(short) (Math.random() * (WIDTH - 30)) + 20,
-								(short) (Math.random() * (HEIGHT - 30)) + 20);
 					physics = (new PhysicsThread(accel, speed, pos, maxSpeed,
 							back));
 					new Thread(physics).start();
 					GamePanel.this.removeAll();
 					GamePanel.this.repaint();
 					GamePanel.this.requestFocusInWindow();
-					GamePanel.this.setVisible(true);
 				}
 			});
-			
 
 			// Listens to actions from the go button
 			serverButton = new KButton("Play on Server", 300, 100);
@@ -251,7 +250,6 @@ public class OfflinePlayer extends JFrame {
 					online = true;
 					// Connects to the server
 					boolean errorConnecting = false;
-					
 
 				}
 			});
@@ -266,15 +264,14 @@ public class OfflinePlayer extends JFrame {
 			currHealth = 100;
 			maxHealth = 100;
 			upgrade = 0;
-			shoot = false;
+			// shoot = false;
 			accessingBlocks = false;
 			pos = new Position((short) 0, (short) 0);
 			keysDown = 0;
 			speed = new Vector(0, 0);
 			accel = new Vector(0, 0);
 			player = new Position(0, 0);
-			bullet = new ArrayList<Position>();
-			blocksToRemove = new ArrayList<Position>();
+			bullets = new ArrayList<Position>();
 			directionsPressed = new ArrayList<Integer>();
 			blocks = new ArrayList<Block>();
 			reloadTime = 100;
@@ -297,7 +294,7 @@ public class OfflinePlayer extends JFrame {
 			add(new JLabel(""));
 			add(serverButton);
 			add(new JLabel(""));
-			
+
 		}
 
 		/**
@@ -312,12 +309,15 @@ public class OfflinePlayer extends JFrame {
 					&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 		}
 
+		public void setBullets(ArrayList<Position> p) {
+			bullets = p;
+		}
+
 		/**
 		 * Draws the player's game
 		 */
 		@Override
 		public void paintComponent(Graphics g) {
-			System.out.println("runnning");
 			super.paintComponent(g);
 			if (alive) {
 				this.setEnabled(true);
@@ -341,7 +341,6 @@ public class OfflinePlayer extends JFrame {
 					else if (player.getY() > getMousePosition().y)
 						angle += 360;
 				} catch (Exception e) {
-
 				}
 
 				// You are drawn as one of the players
@@ -398,7 +397,7 @@ public class OfflinePlayer extends JFrame {
 				long t1 = System.currentTimeMillis();
 				// Bullets
 				g.setColor(Color.red);
-				for (Position p : bullet) {
+				for (Position p : bullets) {
 					// g.fillsOval(p.getX() - 3 - pos.getX() + displayX,
 					// p.getY()
 					// - 3 - pos.getY() + displayY, 7, 7);
@@ -450,7 +449,7 @@ public class OfflinePlayer extends JFrame {
 
 				// Draw blocks
 
-				repaint(100);
+				repaint(40);
 			} else {
 				g.clearRect(0, 0, getWidth(), getHeight());
 				System.out.println("You are dead");
@@ -568,25 +567,6 @@ public class OfflinePlayer extends JFrame {
 			((Graphics2D) g).fill(padShape);
 		}
 
-		/**
-		 * Keeps track of the elapsed time since a shot was fired
-		 */
-		class TimerThread implements Runnable {
-			public void run() {
-				start = System.currentTimeMillis();
-				while (true) {
-
-					// restart
-					if (shoot)
-						start = System.currentTimeMillis();
-
-					// Keep track of the time elapsed
-					else
-						time = (int) ((System.currentTimeMillis() - start));
-				}
-			}
-		}
-
 		@Override
 		public void keyPressed(KeyEvent e) {
 			this.requestFocusInWindow();
@@ -691,6 +671,7 @@ public class OfflinePlayer extends JFrame {
 			this.requestFocusInWindow();
 			if (time > reloadTime)
 				shoot = true;
+
 		}
 
 		@Override
@@ -811,6 +792,28 @@ public class OfflinePlayer extends JFrame {
 				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
 
+	public void setBullets(ArrayList<Position> p) {
+		bullets = p;
+	}
+
+	/**
+	 * Keeps track of the elapsed time since a shot was fired
+	 */
+	class TimerThread implements Runnable {
+		public void run() {
+			start = System.currentTimeMillis();
+			while (true) {
+
+				// restart
+				if (shoot)
+					start = System.currentTimeMillis();
+
+				// Keep track of the time elapsed
+				else
+					time = (int) ((System.currentTimeMillis() - start));
+			}
+		}
+	}
 }
 
 // class tempPlayer {

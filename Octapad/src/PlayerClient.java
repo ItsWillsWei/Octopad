@@ -858,17 +858,8 @@ public class PlayerClient extends JFrame {
 					poso.setY(back.getHeight() / 2 - 30);
 				else if (poso.getY() < -1 * back.getHeight() / 2 + 30)
 					poso.setY(-1 * back.getHeight() / 2 + 30);
-				// System.out.println(accel.getX() + " " + accel.getY());
-				// System.out.println(velocity.getX() + " " + velocity.getY());
-				// System.out.println(pos.getX() + " " + pos.getY());
 				pos.setX((short) Math.round(poso.getX()));
 				pos.setY((short) Math.round(poso.getY()));
-				// game.repaint();
-
-				// TODO changing = false;
-
-				// TODO CommunicationsThread in here send to server
-				// TODO Message queue (maybe send every other one?
 			}
 		}
 	}
