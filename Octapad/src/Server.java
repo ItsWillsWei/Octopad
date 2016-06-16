@@ -245,12 +245,56 @@ public class Server {
 					if (!blocksAccessing) {
 						for (int j = 0; j < blocks.size(); j++) {
 							Block b = blocks.get(j);
-							if (new Rectangle(b.getPos().getX(), b.getPos()
-									.getY(), 20, 20).intersects(new Rectangle(
-									currentBullet.getPos().getX(), 3,
-									currentBullet.getPos().getY(), 3))) {
+							// System.out.println(b.getPos().getX() + " "
+							// + currentBullet.getPos().getX());
+							// System.out.println(b.getPos().getY() + " "
+							// + currentBullet.getPos().getY());
+							time = System.currentTimeMillis();
+							
+							
+							
+							
+							if (Math.abs(b.getPos().getX()+7
+									- (currentBullet.getPos().getX() + (short) (time - currentBullet
+											.time())
+											/ 10.0
+											* currentBullet.xChange())) <= 13
+									&& (Math.abs(b.getPos().getY()+7
+											- (currentBullet.getPos().getY() + (short) (time - currentBullet
+													.time())
+													/ 10.0
+													* currentBullet.yChange())) <= 13))
 
-								blocks.remove(b);
+							// b.getPos().getX() >= currentBullet.getPos()
+							// .getX()-3
+							// + (short) (time - currentBullet.time())
+							// / 10.0 * currentBullet.xChange()
+							// && b.getPos().getX() <= currentBullet
+							// .getPos().getX()
+							// + 30
+							// + (short) (time - currentBullet
+							// .time())
+							// / 10.0
+							// * currentBullet.xChange()-3
+							// && b.getPos().getY() >= currentBullet
+							// .getPos().getY()
+							// + (short) (time - currentBullet
+							// .time())
+							// / 10.0
+							// * currentBullet.yChange() -3
+							// && b.getPos().getY() <= currentBullet
+							// .getPos().getY()
+							// + 30
+							// + (short) ((time - currentBullet
+							// .time()) / 10.0 * currentBullet
+							// .yChange()))
+							// , b.getPos()
+							// .getY(), 20, 20).intersects(new Rectangle(
+							// currentBullet.getPos().getX(), 3,
+							// currentBullet.getPos().getY(), 3))) {
+							{
+								System.out.println("Should be removed");
+								blocks.remove(j);
 								// bullets.remove(currentBullet);
 								bulletHit = true;
 								for (Player p : players) {
@@ -284,13 +328,15 @@ public class Server {
 									|| time - currentBullet.time() > bulletDuration) {
 								j = 0;
 								bullets.remove(currentBullet);
+								System.out.println(bulletHit);
 								break;
 							}
 						}
 					}
-					
-				}System.out.println("Time for check: "
-						+ (System.currentTimeMillis() - time));
+
+				}
+				// System.out.println("Time for check: "
+				// + (System.currentTimeMillis() - time));
 			}
 
 			// if (count % 25 == 0)
@@ -366,6 +412,7 @@ public class Server {
 						blocks.remove(block);
 						bullets.remove(currentBullet);
 						i = 0;
+						p.setPoints((short) (p.getPoints() + 2));
 					}
 				}
 				blocksAccessing = false;

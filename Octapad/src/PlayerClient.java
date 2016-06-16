@@ -369,7 +369,7 @@ public class PlayerClient extends JFrame {
 					((Graphics2D) g).fill(tempBullet);
 					if (spawn.contains(new Point((int) tempBullet.getCenterX(),
 							(int) tempBullet.getCenterY())))
-						points -= 1;
+						points += 1;
 
 					// TODO if (!accessingBlocks)
 					// for (int block = 0; block < blocks.size(); block++) {
@@ -612,8 +612,8 @@ public class PlayerClient extends JFrame {
 							// out.writeShort(points);
 							out.flush();
 							shoot = false;
-							System.out.println("7 took: "
-									+ (System.currentTimeMillis() - time));
+							// System.out.println("7 took: "
+							// + (System.currentTimeMillis() - time));
 							break;
 						// Sending any new objects
 						case 8:
@@ -644,15 +644,16 @@ public class PlayerClient extends JFrame {
 								short upgrade = in.readShort();
 								short angle = in.readShort();
 								// short points = in.readShort();
+								System.out.println(x + " " + y + " " + r + " "
+										+ g + " " + b + " " + upgrade + " "
+										+ angle);
 								currPlayers
 										.add(new tempPlayer(new Position(x, y),
 												new Color(r, g, b), upgrade,
 												angle));
 							}
 							players = currPlayers;
-							System.out.println("Bullets: " + count + " playa: "
-									+ count1 + " 8 took: "
-									+ (System.currentTimeMillis() - time));
+
 							break;
 						case 9:
 							alive = false;
@@ -661,8 +662,8 @@ public class PlayerClient extends JFrame {
 
 							// Retrieves the blocks' information
 							short addOrRemove = in.readShort();
-							System.out.println("receive 10, sub: "
-									+ addOrRemove);
+							// System.out.println("receive 10, sub: "
+							// + addOrRemove);
 							if (addOrRemove == 1) {
 								short x = in.readShort();
 								short y = in.readShort();
@@ -670,7 +671,6 @@ public class PlayerClient extends JFrame {
 								short g = in.readShort();
 								short b = in.readShort();
 								// Add one block
-								System.out.println(r + " " + g + " " + b);
 								Block nextBlock = new Block(new Position(x, y),
 										20, new Color(1, 1, 1));
 								ArrayList<Block> tempBlocks = (ArrayList<Block>) blocks
@@ -688,6 +688,7 @@ public class PlayerClient extends JFrame {
 									Block b = tempBlocks.get(i);
 									if (b.getPos().getX() == x
 											&& b.getPos().getY() == y) {
+										System.out.println("removed");
 										tempBlocks.remove(b);
 										break;
 									}

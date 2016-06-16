@@ -147,8 +147,9 @@ public class Player {
 		try {
 			for (short n : info) {
 				out.writeShort(n);
-				out.flush();
+				//System.out.println(n);
 			}
+			out.flush();
 		} catch (IOException r) {
 		}
 	}
@@ -181,7 +182,6 @@ public class Player {
 				out.writeShort(player.getColour().getBlue());
 				out.writeShort(player.getUpgrade());
 				out.writeShort(player.getAngle());
-				// out.writeShort(player.getPoints());
 			}
 			out.flush();
 
@@ -197,7 +197,7 @@ public class Player {
 	public void updateSurroundings(ArrayList<Bullet> bullets, ArrayList<Player> players) {
 
 		try {
-			in.available();
+			//in.available();
 			long time = System.currentTimeMillis();
 			out.writeShort(8);
 			out.writeShort(bullets.size());
