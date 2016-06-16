@@ -1,47 +1,54 @@
-import java.awt.Color;
-import java.awt.Point;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.awt.*;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
+/**
+ * Class that keeps track of an AI player
+ *
+ */
 public class AIClient {
-	// Relevant and important stuff
+	// Server Variables
 	private static Socket sock;
 	private static DataInputStream in;
 	private static DataOutputStream out;
-	private ArrayList<Position> bullet = new ArrayList<Position>();
-	private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
-	private Vector velocity;
+	private static String ip = "localhost";
+	private static int port = 421;
 
+	//Game variables
 	private int health = 100;
 	private int points = 0;
 	private boolean alive = true;
-	private static String ip = "localhost";
-	private static int port = 421;
+	private ArrayList<Position> bullet = new ArrayList<Position>();
+	private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
+	private ArrayList<Block> blocks = new ArrayList<Block>();
+	
+	//Physics Variables
 	private Position pos;
 	private int angle;
 	private int upgrade;
 	private boolean shoot = false;
-	private int speed = 2;
+	private int speed = 10;
+	private Vector velocity;
 
+	//Creates a new AIClient
 	public static void main(String[] args) {
 		new AIClient();
 	}
 
+	/**
+	 * Creates a new pad that tracks the human players and tries to shoot them
+	 */
 	public AIClient() {
 		// Connects to the server
 		try {
 			sock = new Socket(ip, port);
 			in = new DataInputStream(sock.getInputStream());
 			out = new DataOutputStream(sock.getOutputStream());
+			//Reads in the spawning position
 			short x = in.readShort();
 			short y = in.readShort();
+			//Reads in the player's colour
 			short r = in.readShort();
 			short g = in.readShort();
 			short b = in.readShort();
@@ -54,16 +61,20 @@ public class AIClient {
 		}
 
 		// Begin game
-		new Thread(new ServerThread()).start();
+		Thread t = new Thread(new ServerThread());
+		t.start();
 		angle = (int) (Math.random() * 360);
 		randomMovements();
 	}
 
+	/**
+	 * Sets the AI in an opposite direction at a "random" angle
+	 */
 	public void randomMovements() {
 		if (pos.getX() < 0 || pos.getX() > 1000 || pos.getY() < 0
 				|| pos.getY() > 700)
 			angle = (angle + 180) % 360;
-		double rad = angle / 360.0 * Math.PI;
+		double rad = angle / 180.0 * Math.PI;
 		velocity = new Vector(speed * Math.cos(rad), speed * Math.sin(rad));
 		pos.setX((short) (pos.getX() + velocity.getX()));
 		pos.setY((short) (pos.getY() + velocity.getY()));
@@ -77,13 +88,8 @@ public class AIClient {
 		@Override
 		public void run() {
 			while (true) {
-				// Read in the server's command (if any)
-				// randomMovements();
-
-				int times = 0;
 				try {
-
-					times++;
+					//Reads in the server's command
 					short curr = in.readShort();
 					while (curr == 0) {
 					}
@@ -96,52 +102,40 @@ public class AIClient {
 						break;
 					// Place player
 					case 2:
-						// colour = Integer.parseInt(command[1]);
-						// GamePanel.this.repaint(0);
 						break;
 					// Update health
 					case 3:
 						try {
 							health = in.readShort();
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
-						// GamePanel.this.repaint(0);
 						break;
 					// Request upgrade
 					case 4:
-						// upgrade option =true
-						// GamePanel.this.repaint(0);
 						break;
 					// Awards points
 					case 5:
 						points += in.readShort();
-						// GamePanel.this.repaint(0);
 						break;
 					// Timed out or dead
 					case 6:
 						alive = false;
-						// timedOut = true;
-						// TODO end here but just testing right now
-						System.exit(0);
 						break;
 					// Requesting information
 					case 7:
 						out.writeShort(pos.getX());
-						// System.out.println(pos.getX()+ " "+pos.getY()+
-						// " "+angle + " "+upgrade+ " "+shoot);
 						out.writeShort(pos.getY());
 						out.writeShort(angle);
 						out.writeShort(upgrade);
-						out.writeBoolean(shoot);
+						out.writeBoolean((int) (Math.random() * 10) == 0 ? true
+								: false);
+						out.writeShort(points);
 						out.flush();
-						shoot = false;
-						// GamePanel.this.repaint(0);
 						break;
 					// Sending any new objects
 					case 8:
-						// System.out.println("Receiving info");
+						
 						ArrayList<Position> currBullets = new ArrayList<Position>();
 						// any bullets in the area
 						short count = in.readShort();
@@ -154,7 +148,6 @@ public class AIClient {
 
 						bullet = currBullets;
 						count = in.readShort();
-						// System.out.println(count);
 
 						ArrayList<tempPlayer> currPlayers = new ArrayList<tempPlayer>();
 						// sending all players in your area
@@ -169,15 +162,33 @@ public class AIClient {
 							currPlayers.add(new tempPlayer(new Position(x, y),
 									new Color(r, g, b), upgrade, angle));
 						}
-						// System.out.println("players.size"+players.size());
 						players = currPlayers;
-						// if (times % 10 == 0)
-							closestPlayer();
+						closestPlayer();
 						break;
 					case 9:
 						alive = false;
 						break;
-
+					case 10:
+						// Retrieves the blocks' information
+						if (in.readShort() == 1){
+						short x = in.readShort();
+						short y = in.readShort();
+						short r = in.readShort();
+						short g = in.readShort();
+						short b = in.readShort();
+						// Add one block
+						blocks.add(new Block(new Position(x, y), 20,
+								new Color(r, g, b)));
+						}else
+						{
+							short x = in.readShort();
+							short y = in.readShort();
+							for(Block b: blocks){
+								if(b.getPos().getX() == x && b.getPos().getY() == y)
+									blocks.remove(b);
+							}
+						}
+						break;
 					}
 				} catch (IOException e) {
 				}
@@ -185,17 +196,24 @@ public class AIClient {
 		}
 	}
 
+	/**
+	 * Determine the closest player to the AI
+	 */
 	private void closestPlayer() {
 		int min = Integer.MAX_VALUE;
 		tempPlayer close = null;
+		//Check all the players on the server to determine a closest player
 		for (short i = 0; i < players.size(); i++) {
 			tempPlayer p = players.get(i);
+			//If the player and the AI are not at the same position
 			if (!(p.getPos().getX() == pos.getX() && p.getPos().getY() == pos
 					.getY())
+					//If the AI is closer to the player than the current closest distance
 					&& (pos.getX() - p.getPos().getX())
 							* (pos.getX() - p.getPos().getX())
 							+ (pos.getY() - p.getPos().getY())
 							* (pos.getY() - p.getPos().getY()) < min) {
+				//Set the current player as the closest player
 				min = (pos.getX() - p.getPos().getX())
 						* (pos.getX() - p.getPos().getX())
 						+ (pos.getY() - p.getPos().getY())
@@ -203,27 +221,35 @@ public class AIClient {
 				close = p;
 			}
 		}
-
+		//If there are no players, stop moving AI
 		if (close == null) {
 			angle = 180;
+			velocity = new Vector(0, 0);
 		}
-		double y = pos.getY() - close.getPos().getY();
-		double x = pos.getX() - close.getPos().getX();
-		if (x < 0.5 && x > -0.5) {
-			angle = (y <= 0 ? 90 : 270);
-		} else
-			angle = (int) (180 / Math.PI * Math.atan(y / x));
+		//Pursue the closest player
+		else {
+			//The component distances to the closest player
+			double y = pos.getY() - close.getPos().getY();
+			double x = pos.getX() - close.getPos().getX();
+			
+			//Face the AI toward the player
+			if (x < 0.5 && x > -0.5) {
+				angle = (y <= 0 ? 90 : 270);
+			} else
+				angle = (int) (180 / Math.PI * Math.atan(y / x));
 
-		if (pos.getX() > close.getPos().getX()) {
-			angle += 180;
-		} else if (angle != 270 && pos.getY() > close.getPos().getY())
-			angle += 360;
-
-		System.out.println(angle);
-		double rad = angle / 360.0 * Math.PI;
-		velocity = new Vector(speed * Math.cos(rad), speed * Math.sin(rad));
-		pos.setX((short) (pos.getX() + velocity.getX()));
-		pos.setY((short) (pos.getY() + velocity.getY()));
-
+			if (pos.getX() > close.getPos().getX()) {
+				angle += 180;
+			} else if (angle != 270 && pos.getY() > close.getPos().getY())
+				angle += 360;
+			double rad = angle / 180.0 * Math.PI;
+			
+			//Stop moving if there ar eno players
+			if (players.size() == 0)
+				velocity = new Vector(0, 0);
+			velocity = new Vector(speed * Math.cos(rad), speed * Math.sin(rad));
+			pos.setX((short) (pos.getX() + velocity.getX()));
+			pos.setY((short) (pos.getY() + velocity.getY()));
+		}
 	}
 }
