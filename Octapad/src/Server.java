@@ -1,4 +1,6 @@
 import java.awt.Color;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -11,12 +13,12 @@ import javax.imageio.ImageIO;
 /**
  * 
  * @author
- * @version Jun 2, 2016
+ * @version Jun 10, 2016
  */
 public class Server {
 	private int WIDTH = 1024;
 	private int HEIGHT = 700;
-	private static Display display;
+	private int bulletDuration = 5000;
 	private ServerSocket serverSocket;
 	private int noOfPlayers, noOfBlocks;
 	private ArrayList<Player> players = new ArrayList<Player>();
@@ -27,8 +29,6 @@ public class Server {
 	private static boolean blocksAccessing = false;
 
 	public static void main(String[] args) {
-		display = new Display();
-
 		new Server();
 	}
 
@@ -52,11 +52,15 @@ public class Server {
 			players = new ArrayList<Player>();
 			noOfPlayers = 0;
 			noOfBlocks = 0;
+
 			back = ImageIO.read(new File("back-low.jpg"));
+			Thread ai = new Thread(new AIThread());
+			// ai.start();
 			while (true) {
 
 				System.out.println("Waiting for connection");
 				// Connect new players
+
 				client = serverSocket.accept();
 
 				noOfPlayers++;
@@ -69,7 +73,7 @@ public class Server {
 							(short) (Math.random() * (WIDTH - 30)) + 20,
 							(short) (Math.random() * (HEIGHT - 30)) + 20);
 				currentlyAccessing = true;
-				
+
 				currentPlayer = new Player(client, current, noOfPlayers);
 				players.add(currentPlayer);
 				// Initial position and colour
@@ -78,17 +82,7 @@ public class Server {
 						(short) currentPlayer.getColour().getRed(),
 						(short) currentPlayer.getColour().getGreen(),
 						(short) currentPlayer.getColour().getBlue() };
-				System.out.println(currentPlayer.getPos().getX() + " "
-						+ currentPlayer.getPos().getY());
 				currentPlayer.sendCommand(info);
-				// currentPlayer.sendCommand(currentPlayer.getPos().getX() + " "
-				// + currentPlayer.getPos().getY() + " "
-				// + currentPlayer.getColour().getRed() + " "
-				// + currentPlayer.getColour().getGreen() + " "
-				// + currentPlayer.getColour().getBlue());
-				// currentThread = new Thread(new PlayerThread(currentPlayer));
-				// threads.add(currentThread);
-				// currentThread.start();
 				currentlyAccessing = false;
 				// Be nice to the JVM
 				Thread.sleep(100);
@@ -109,6 +103,25 @@ public class Server {
 				&& p.getY() - radius > 0 && p.getY() + radius < HEIGHT);
 	}
 
+	/**
+	 * Runs an AIClient to start the game
+	 *
+	 */
+	class AIThread implements Runnable {
+		public void run() {
+			try {
+				Thread.sleep(1400);
+			} catch (Exception e) {
+			}
+			new AIClient();
+		}
+	}
+
+	/**
+	 * Generates 10 blocks every five seconds. For every player, 20 blocks are
+	 * generated.
+	 *
+	 */
 	class GenerateBlocks implements Runnable {
 		public void run() {
 			while (true) {
@@ -117,36 +130,53 @@ public class Server {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				// Spawn blocks
-
-				if (!blocksAccessing && noOfBlocks < noOfPlayers * 200) {
-					blocksAccessing=true;
+				// If blocks should be generated
+				if (!blocksAccessing && noOfBlocks < noOfPlayers * 20) {
+					blocksAccessing = true;
+					// Generate each block
 					for (int block = 0; block < 10; block++) {
 						Position spawn = new Position((short) (Math.random()
 								* back.getWidth() / 20)
 								* 20 - back.getWidth() / 2,
 								(short) (Math.random() * back.getHeight() / 20)
 										* 20 - back.getWidth() / 2);
-						blocks.add(new Block(spawn, 20, new Color((int) (Math
-								.random() * 256), (int) (Math.random() * 256),
-								(int) (Math.random() * 256))));
-						System.out.println(spawn.getX() + " " + spawn.getY());
+						Color c = new Color((int) (Math.random() * 256),
+								(int) (Math.random() * 256),
+								(int) (Math.random() * 256));
+						blocks.add(new Block(spawn, 20, c));
+						// Send the blocks to the player
+						short[] info = new short[7];
+						info[0] = 10;
+						info[1] = 1;
+						info[2] = spawn.getX();
+						info[3] = spawn.getY();
+						info[4] = (short) (c.getRed());
+						info[5] = (short) (c.getGreen());
+						info[6] = (short) (c.getBlue());
+
+						for (Player p : players)
+							p.sendCommand(info);
 					}
-					blocksAccessing=false;
+					noOfBlocks += 10;
+					blocksAccessing = false;
 				}
 
 			}
 		}
+
 	}
 
+	/**
+	 * Communicates with the PlayerClient via the Player class
+	 *
+	 */
 	class BroadcastThread implements Runnable {
 
 		@Override
 		public void run() {
-
+			int count = 0;
 			while (!Thread.currentThread().isInterrupted()) {
-				// TODO maybe check for collisions here then just tell
-				// people
+				count++;
 				try {
 					Thread.sleep(30);
 				} catch (InterruptedException e1) {
@@ -155,41 +185,14 @@ public class Server {
 				}
 				long start = System.currentTimeMillis();
 
+				// Update each player
 				for (int i = 0; i < players.size(); i++) {
 					Player p = players.get(i);
-					// System.out.println("hi");
 					if (currentlyAccessing)
 						break;
 
-					if (!blocksAccessing) {
-						blocksAccessing = true;
-						p.sendCommand(new short[] { 10, (short) blocks.size() });
-						// Show blocks
-						for (Block block : blocks) {
-							short[] info = new short[5];
-							info[0] = block.getPos().getX();
-							info[1] = block.getPos().getY();
-							info[2] = (short) block.getColor().getRed();
-							info[3] = (short) block.getColor().getGreen();
-							info[4] = (short) block.getColor().getBlue();
-							p.sendCommand(info);
-						}
-					}
-					blocksAccessing = false;
-					// System.out.println("bye");
-
-					// System.out.print(System.currentTimeMillis()-start+ " ");
-
 					if (!p.alive()) {// Tell them they are dead
 						System.out.println("Player " + p.getID() + " is dead");
-						// TODO delete someone graphically when they are
-						// dead
-
-						// TODO remove a thread
-						for (Bullet b : bullets) {
-							if (b.getID() == p.getID())
-								bullets.remove(b);
-						}
 						int remove = players.indexOf(p);
 						i = 0;
 						players.remove(remove);
@@ -197,33 +200,31 @@ public class Server {
 						break;
 					}
 
-					// p.setSurroundings(surroundingPlayers(p),
-					// surroundingShots(p));
-
+					// p.updateSurroundings(surroundingShots(p),
+					// surroundingPlayers(p));
 					p.updateSurroundings(bullets, players);
-					// p.updateSurroundings();
-					// System.out.print(System.currentTimeMillis()-start+ " ");
-					// Requesting info
-
+					// Requesting info from the player
 					long s = System.currentTimeMillis();
-
 					p.requestInfo();
-					// System.out.println("Outside player class:"
-					// + (System.currentTimeMillis() - s));
 
+					// Shoot a bullet
 					if (p.shooting()) {
 						bullets.add(new Bullet(p.getPos(), p.getID(),
-								new Vector(Math.cos(p.getAngle() * 1.0 / 180
-										* Math.PI), Math.sin(p.getAngle() * 1.0
-										/ 180 * Math.PI))));
+								new Vector(Math.cos(p.getAngle() * Math.PI
+										/ 180)
+										* p.getBulletSpeed(), Math.sin(p
+										.getAngle() * Math.PI / 180)
+										* p.getBulletSpeed())));
 					}
 
 				}
-
 				long time = System.currentTimeMillis();
+				// Check each bullet
 				for (int i = 0; i < bullets.size(); i++) {
 					Bullet currentBullet = bullets.get(i);
-					boolean ok = true;
+
+					boolean bulletHit = false;
+					// Check to see if a bullet hits a player
 					for (Player p : players) {
 						if (Math.abs(currentBullet.getPos().getX()
 								+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
@@ -234,65 +235,103 @@ public class Server {
 								&& currentBullet.getID() != p.getID()) {
 							p.hit(10);
 							bullets.remove(currentBullet);
-							ok = false;
+							bulletHit = true;
 							break;
 						}
 
 					}
-					if (!ok
-							|| currentBullet.getPos().getX() > back.getWidth() / 2
-							|| currentBullet.getPos().getY() > back.getHeight() / 2
-							|| currentBullet.getPos().getY() < -1
-									* back.getHeight() / 2
-							|| currentBullet.getPos().getX() < -1
-									* back.getWidth() / 2
-							|| !currentBullet.alive()
-							|| time - currentBullet.time() > 4000) {
-						i--;
-						// System.out.println("removing bullet");
-						bullets.remove(currentBullet);
+
+					// Check to see if a bullet hits a block
+					if (!blocksAccessing) {
+						for (int j = 0; j < blocks.size(); j++) {
+							Block b = blocks.get(j);
+							if (new Rectangle(b.getPos().getX(), b.getPos()
+									.getY(), 20, 20).intersects(new Rectangle(
+									currentBullet.getPos().getX(), 3,
+									currentBullet.getPos().getY(), 3))) {
+
+								blocks.remove(b);
+								// bullets.remove(currentBullet);
+								bulletHit = true;
+								for (Player p : players) {
+									if (p.getID() == currentBullet.getID())
+										p.setPoints((short) (p.getPoints() + 10));
+									// Update upgrades/points
+									if (p.getPoints() > 1000)
+										p.setUpgrade(1);
+									else if (p.getPoints() > 10000)
+										p.setUpgrade(2);
+									else
+										p.setUpgrade(0);
+									p.sendCommand(new short[] { 10, 2,
+											b.getPos().getX(),
+											b.getPos().getY() });
+								}
+							}
+							// System.out.println("S Player " + i+" "
+							// + (System.currentTimeMillis() - start));
+
+							if (bulletHit
+									|| currentBullet.getPos().getX() > back
+											.getWidth() / 2
+									|| currentBullet.getPos().getY() > back
+											.getHeight() / 2
+									|| currentBullet.getPos().getY() < -1
+											* back.getHeight() / 2
+									|| currentBullet.getPos().getX() < -1
+											* back.getWidth() / 2
+									|| !currentBullet.alive()
+									|| time - currentBullet.time() > bulletDuration) {
+								j = 0;
+								bullets.remove(currentBullet);
+								break;
+							}
+						}
 					}
-				}
-				
-				
-				
-				
-				// System.out.println("Server"
-				// + (System.currentTimeMillis() - start));
+					
+				}System.out.println("Time for check: "
+						+ (System.currentTimeMillis() - time));
 			}
+
+			// if (count % 25 == 0)
+			// System.out.println(System.currentTimeMillis() - start);
+
 		}
+
 	}
 
-	/**
-	 * 
-	 * @param p
-	 * @return
+	/*
+	 * Checks the surrounding area for players
 	 */
 	// TODO we can add collision detection here and just handle it in here
 	// that way we don't have to worry about it later
 	public ArrayList<Bullet> surroundingShots(Player p) {
 		ArrayList<Bullet> b = new ArrayList<Bullet>();
-		// Some constant for the screen size
-		while (currentlyAccessing) {
-		}
-		currentlyAccessing = true;
-		for (int i = 0; i < bullets.size(); i++) {
-			Bullet currentBullet = bullets.get(i);
-			System.out.println("NOT HERE");
+
+		for (Bullet currentBullet : bullets) {
 			long time = System.currentTimeMillis();
-			// Time bullets out here i guess
-			if (currentBullet.getPos().getX() > back.getWidth() / 2
-					|| currentBullet.getPos().getY() > back.getHeight() / 2
-					|| currentBullet.getPos().getY() < -1 * back.getHeight()
-							/ 2
-					|| currentBullet.getPos().getX() < -1 * back.getWidth() / 2
-					|| !currentBullet.alive()
-					|| time - currentBullet.time() > 4000) {
-				i--;
-				// System.out.println("removing bullet");
-				bullets.remove(currentBullet);
+
+			// Do it all based on changes
+			if (2 * Math
+					.abs(currentBullet.getPos().getX()
+							+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+									.xChange()) - p.getPos().getX()) <= WIDTH
+					&& 2 * Math
+							.abs(currentBullet.getPos().getY()
+									+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+											.yChange()) - p.getPos().getY()) <= HEIGHT) {
+				// if (p.getSurroundingBullets().contains(currentBullet))
+				b.add(currentBullet);
+				// if (collision)
+				// decrement health, change course of bullet
 			}
-			int bulletDmg = 10;
+		}
+
+		for (int i = 0; i < b.size(); i++) {
+			Bullet currentBullet = b.get(i);
+			long time = System.currentTimeMillis();
+
+			// Checks whether it hits the current player
 			if (Math.abs(currentBullet.getPos().getX()
 					+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
 							.xChange()) - p.getPos().getX()) <= 30
@@ -300,24 +339,79 @@ public class Server {
 							+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
 									.yChange()) - p.getPos().getY()) <= 30
 					&& currentBullet.getID() != p.getID())
-				p.hit(bulletDmg);
-
-			// Do it all based on changes
-			if (Math.abs(currentBullet.getPos().getX()
-					+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
-							.xChange()) - p.getPos().getX()) <= 5000
-					&& Math.abs(currentBullet.getPos().getY()
-							+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
-									.yChange()) - p.getPos().getY()) <= 5000) {
-				// if (p.getSurroundingBullets().contains(currentBullet))
-				b.add(currentBullet);
-				// if (collision)
-				// decrement health, change course of bullet
+				p.hit(10);
+			if (!blocksAccessing) {
+				blocksAccessing = true;
+				for (Block block : blocks) {
+					// System.out.println(block.getPos().getX() + " "
+					// + block.getPos().getY() + " "
+					// + currentBullet.getPos().getX() + " "
+					// + currentBullet.getPos().getY());
+					if (new Rectangle(block.getPos().getX(), block.getPos()
+							.getY(), 20, 20).contains(new Point(currentBullet
+							.getPos().getX() + 3,
+							currentBullet.getPos().getY() + 3))) {
+						for (Player playa : players) {
+							if (playa.getID() == currentBullet.getID())
+								playa.setPoints((short) (playa.getPoints() + 10));
+							// Update upgrades/points
+							if (playa.getPoints() > 1000)
+								playa.setUpgrade(1);
+							else if (playa.getPoints() > 10000)
+								playa.setUpgrade(2);
+							playa.sendCommand(new short[] { 10, 2,
+									block.getPos().getX(),
+									block.getPos().getY() });
+						}
+						blocks.remove(block);
+						bullets.remove(currentBullet);
+						i = 0;
+					}
+				}
+				blocksAccessing = false;
 			}
 		}
-		currentlyAccessing = false;
-
 		return b;
+
+		// Some constant for the screen size
+		// for (int i = 0; i < bullets.size(); i++) {
+		// Bullet currentBullet = bullets.get(i);
+		// long time = System.currentTimeMillis();
+		// // Time bullets out here i guess
+		// if (currentBullet.getPos().getX() > back.getWidth() / 2
+		// || currentBullet.getPos().getY() > back.getHeight() / 2
+		// || currentBullet.getPos().getY() < -1 * back.getHeight()
+		// / 2
+		// || currentBullet.getPos().getX() < -1 * back.getWidth() / 2
+		// || !currentBullet.alive()
+		// || time - currentBullet.time() > 4000) {
+		// i--;
+		// bullets.remove(currentBullet);
+		// }
+		// int bulletDmg = 10;
+		// if (Math.abs(currentBullet.getPos().getX()
+		// + (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+		// .xChange()) - p.getPos().getX()) <= 30
+		// && Math.abs(currentBullet.getPos().getY()
+		// + (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+		// .yChange()) - p.getPos().getY()) <= 30
+		// && currentBullet.getID() != p.getID())
+		// p.hit(bulletDmg);
+		//
+		// // Do it all based on changes
+		// if (Math.abs(currentBullet.getPos().getX()
+		// + (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+		// .xChange()) - p.getPos().getX()) <= 5000
+		// && Math.abs(currentBullet.getPos().getY()
+		// + (int) ((time - currentBullet.time()) / 10.0 * currentBullet
+		// .yChange()) - p.getPos().getY()) <= bulletDuration) {
+		// // if (p.getSurroundingBullets().contains(currentBullet))
+		// b.add(currentBullet);
+		// // if (collision)
+		// // decrement health, change course of bullet
+		// }
+		// }
+		// return b;
 	}
 
 	/*
@@ -325,20 +419,17 @@ public class Server {
 	 */
 	public ArrayList<Player> surroundingPlayers(Player player) {
 		ArrayList<Player> p = new ArrayList<Player>();
-
-		// TODO potentially only update things that are missing and that need to
-		// be added
-
 		// Some constant for the screen size
 		for (Player currentPlayer : players) {
 			// Not the player and not already on screen
 
 			if (!player.equals(currentPlayer))
-				// && !player.getSurroundingPlayers().contains(currentPlayer))
-				if (Math.abs(currentPlayer.getPos().getX()
-						- player.getPos().getX()) <= 500
-						&& Math.abs(currentPlayer.getPos().getY()
-								- player.getPos().getY()) <= 500)
+				// &&
+				// !player.getSurroundingPlayers().contains(currentPlayer))
+				if (2 * Math.abs(currentPlayer.getPos().getX()
+						- player.getPos().getX()) <= WIDTH
+						&& 2 * Math.abs(currentPlayer.getPos().getY()
+								- player.getPos().getY()) <= HEIGHT)
 					p.add(currentPlayer);
 		}
 		return p;

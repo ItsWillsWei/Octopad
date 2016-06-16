@@ -2,6 +2,11 @@ public class Position {
 	private short x;
 	private short y;
 
+	/**
+	 * Constructor
+	 * @param x the x co-ordinate
+	 * @param y the y co-ordinate
+	 */
 	Position(short x, short y) {
 		this.x = x;
 		this.y = y;
@@ -12,10 +17,18 @@ public class Position {
 		this.y = (short)y;
 	}
 
+	/**
+	 * 
+	 * @return x value
+	 */
 	public short getX() {
 		return x;
 	}
 
+	/**
+	 * 
+	 * @return y value
+	 */
 	public short getY() {
 		return y;
 	}
@@ -27,13 +40,4 @@ public class Position {
 	public void setX(short a) {
 		x = a;
 	}
-
-	public void increaseX(short increment) {
-		x += increment;
-	}
-
-	public void increaseY(short increment) {
-		y += increment;
-	}
-
 }

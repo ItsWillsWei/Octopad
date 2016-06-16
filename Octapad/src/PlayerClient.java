@@ -1,39 +1,22 @@
 //Import the necessary classes
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.GeneralPath;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
+import javax.imageio.*;
+import javax.swing.*;
 
+/**
+ * This is a client that must be run and connected to the server
+ * 
+ * @author Tilman and Will
+ * @date June 16, 2016
+ *
+ */
 public class PlayerClient extends JFrame {
 	// Final variables for the pane
 	private static GamePanel game;
@@ -45,83 +28,67 @@ public class PlayerClient extends JFrame {
 		super("Octopad");
 		game = new GamePanel();
 		setContentPane(game);
-		setResizable(true);
+		setResizable(false);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		pack();
 	}
 
+	// Starts the player client
 	public static void main(String[] args) throws Exception {
-		new Thread(new RunServer()).start();
 		PlayerClient p = new PlayerClient();
 		p.setVisible(true);
 	}
 
-	static class RunServer implements Runnable {
-		public void run() {
-			// new Server();
-		}
-	}
-
 	/**
-	 * The GamePanel class that keeps track of the game
+	 * The GamePanel class that keeps track of the game and handles graphics
 	 */
 	static class GamePanel extends JPanel implements MouseListener, KeyListener {
-		private final static byte HEALTH_HEIGHT = 5;
-		private static byte HEALTH_LENGTH = 30;
-		private static int time;
-		private static boolean timedOut;
-		public boolean online, accessingBlocks = false;
-
 		// Server variables
 		private static Socket sock;
 		private static DataInputStream in;
 		private static DataOutputStream out;
-		// private static String ip = "99.253.205.29";
 		private static String ip = "localhost";
 		private static int port = 421;
 
 		// Player information
 		Color c;
-		private short maxHealth = 100;
-		private short currHealth = 100;
+		private short maxHealth;
+		private short currHealth;
 		private static long start;
 		private boolean alive = true;
 		private int playerType;
+		public boolean online, accessingBlocks;
 
-		private byte upgrade = 1;
-		private boolean shoot = false;
-		private short reloadTime = 100;
-		private int points = 0;
-		private ArrayList<Position> bullet = new ArrayList<Position>(), blocksToRemove = new ArrayList<Position>();
-		private ArrayList<tempPlayer> players = new ArrayList<tempPlayer>();
-		private ArrayList<Block> blocks = new ArrayList<Block>(),
-				dontScrewUpBlocks = new ArrayList<Block>();
+		private ArrayList<Block> blocks;
 
 		// Display information variables
 		private KButton serverButton, offlineButton;
 		private KInputPanel nameInput, ipInput, portInput;
 		private static final Dimension SCREEN = new Dimension(1024, 768);
-		private static final Position CENTER = new Position(
-				(short) (SCREEN.getWidth() / 2),
-				(short) (SCREEN.getHeight() / 2));
-		private boolean titleScreen;
-		private int currentPlayer = 0;
+		private BufferedImage back;
+		private final static byte HEALTH_HEIGHT = 5;
+		private static byte HEALTH_LENGTH = 30;
 
 		// Physics variables
 		private Position pos, player;
 		private static Vector speed;
 		private static Vector accel;
 		private int angle;
-
 		private static int maxSpeed;
 		private int maxAccel;
 		private int keysDown;
 		private ArrayList<Integer> directionsPressed;
 		private PhysicsThread physics;
+		private ServerThread server;
 		boolean changing = false;
-
-		// private Image back;
-		private BufferedImage back;
+		private byte upgrade;
+		private boolean shoot;
+		private short reloadTime;
+		private int points;
+		private ArrayList<Position> bullet, blocksToRemove;
+		private ArrayList<tempPlayer> players;
+		private static int time;
+		private static boolean timedOut;
 
 		/**
 		 * Creates a new GamePanel
@@ -225,8 +192,11 @@ public class PlayerClient extends JFrame {
 						c = new Color(r, g, b);
 						System.out.println(pos.getX() + " " + pos.getY());
 						System.out.println(c);
-						// System.exit(0);
-						new Thread(new ServerThread()).start();
+
+						// Starts the communication witht the server and the
+						// physics engine
+						server = new ServerThread();
+						new Thread(server).start();
 						physics = (new PhysicsThread(accel, speed, pos,
 								maxSpeed, back));
 						new Thread(physics).start();
@@ -263,17 +233,23 @@ public class PlayerClient extends JFrame {
 			// Add labels
 			alive = true;
 			currHealth = 100;
+			maxHealth = 100;
+			upgrade = 0;
+			shoot = false;
+			accessingBlocks = false;
 			pos = new Position((short) 0, (short) 0);
-			// movingCenter =new Position(pos.getX(), pos.getY());
 			keysDown = 0;
 			speed = new Vector(0, 0);
 			accel = new Vector(0, 0);
 			player = new Position(0, 0);
+			bullet = new ArrayList<Position>();
+			blocksToRemove = new ArrayList<Position>();
 			directionsPressed = new ArrayList<Integer>();
-			currentPlayer = 1;
-			// Pixels per second
+			players = new ArrayList<tempPlayer>();
+			blocks = new ArrayList<Block>();
+			reloadTime = 100;
+			points = 0;
 			maxSpeed = 800;
-			// Pixels per second^2
 			maxAccel = 2000;
 
 			add(new JLabel(""));
@@ -298,6 +274,9 @@ public class PlayerClient extends JFrame {
 			playerType = 1;
 		}
 
+		/**
+		 * Draws the player's game
+		 */
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
@@ -344,23 +323,28 @@ public class PlayerClient extends JFrame {
 						+ displayX, -1 * back.getHeight() / 2 - pos.getY()
 						+ displayY, this);
 
+				if (points > 1000)
+					upgrade = 1;
+				if (points > 10000)
+					upgrade = 2;
 				drawPads(g, upgrade, player, angle, c);
 
 				// Draw your health bar
 				g.setColor(Color.GREEN);
-				g.fillRect(displayX, displayY - 10,
+				g.fillRect(displayX - 15, displayY - 35,
 						(int) (30 * (currHealth * 1.0 / maxHealth)),
 						HEALTH_HEIGHT);
 				g.setColor(Color.RED);
 				g.fillRect(
 						displayX
-								+ (int) (HEALTH_LENGTH * (currHealth * 1.0 / maxHealth)),
-						displayY - 10,
+								+ (int) (HEALTH_LENGTH * (currHealth * 1.0 / maxHealth))
+								- 15,
+						displayY - 35,
 						(int) (HEALTH_LENGTH * ((maxHealth - currHealth * 1.0) / maxHealth)),
 						HEALTH_HEIGHT);
-				// System.out.println(pos.getX() + " "+ pos.getY());
-				g.fillRect(100 - pos.getX() + displayX, 100 - pos.getY()
-						+ displayY, 100, 100);
+				Rectangle spawn = new Rectangle(-50 - pos.getX() + displayX,
+						-50 - pos.getY() + displayY, 100, 100);
+				((Graphics2D) g).fill(spawn);
 
 				// Other players
 				for (tempPlayer p : players) {
@@ -372,9 +356,6 @@ public class PlayerClient extends JFrame {
 					}
 				}
 
-				g.drawString("Health: " + currHealth, 950, 200);
-				g.drawString("Points: " + points, 950, 250);
-
 				long t1 = System.currentTimeMillis();
 				// Bullets
 				g.setColor(Color.red);
@@ -382,55 +363,63 @@ public class PlayerClient extends JFrame {
 					// g.fillsOval(p.getX() - 3 - pos.getX() + displayX,
 					// p.getY()
 					// - 3 - pos.getY() + displayY, 7, 7);
-					Ellipse2D.Double tempBullet = new Ellipse2D.Double(p.getX()-3-pos.getX()+displayX,p.getY()-3-pos.getY()+displayY,7,7);
+					Ellipse2D.Double tempBullet = new Ellipse2D.Double(p.getX()
+							- 3 - pos.getX() + displayX, p.getY() - 3
+							- pos.getY() + displayY, 7, 7);
 					((Graphics2D) g).fill(tempBullet);
-					
-					if(!accessingBlocks)
-					for(int block = 0; block<blocks.size(); block++){
-						Position blockPos = blocks.get(block).getPos();
-						if(new Rectangle(blockPos.getX()-pos.getX()+player.getX(),
-								blockPos.getY()-pos.getY()+player.getY(), 20,20).contains(tempBullet.getCenterX(), tempBullet.getCenterY())){
-							blocks.remove(block);
-							blocksToRemove.add(blockPos);
-							points+=10;
-						}
-					}
-					//g.fillOval(p.getX() - 3 - pos.getX() + displayX, p.getY()
-							//- 3 - pos.getY() + displayY, 7, 7);
-					
-					
+					if (spawn.contains(new Point((int) tempBullet.getCenterX(),
+							(int) tempBullet.getCenterY())))
+						points -= 1;
+
+					// TODO if (!accessingBlocks)
+					// for (int block = 0; block < blocks.size(); block++) {
+					// Position blockPos = blocks.get(block).getPos();
+					// if (new Rectangle(blockPos.getX() - pos.getX()
+					// + player.getX(), blockPos.getY()
+					// - pos.getY() + player.getY(), 20, 20)
+					// .contains(tempBullet.getCenterX(),
+					// tempBullet.getCenterY())) {
+					// blocks.remove(block);
+					// blocksToRemove.add(blockPos);
+					// points += 10;
+					// }
+					// }
+					// g.fillOval(p.getX() - 3 - pos.getX() + displayX, p.getY()
+					// - 3 - pos.getY() + displayY, 7, 7);
+
 				}
-				// System.out.println(System.currentTimeMillis() - t1);
+
+				for (Block b : blocks) {
+					// try{
+					accessingBlocks = true;
+					g.setColor(b.getColor());
+					g.fillRect(b.getPos().getX() - pos.getX() + player.getX(),
+							b.getPos().getY() - pos.getY() + player.getY(), 20,
+							20);
+					// if (new Rectangle(b.getPos().getX(), b.getPos()
+					// .getY(), 20, 20).contains(new Point(
+					// (int) tempBullet.getCenterX(),
+					// (int) tempBullet.getCenterY()))) {
+					// points += 10;
+					// }
+					// blocks.remove(b);
+				}
+
+				g.setColor(Color.MAGENTA);
+				g.drawString("Health: " + currHealth, 950, 200);
+				g.drawString("Points: " + points, 950, 250);
 
 				// Draw blocks
 
-				// for(Block b:blocks){
-				// g.setColor(b.getColor());
-				// g.fillRect(b.getPos().getX(), b.getPos().getY(), 10, 10);
-				// }
-				if (!accessingBlocks)
-					for (Block b : blocks) {
-						// try{
-						g.setColor(b.getColor());
-						g.fillRect(
-								b.getPos().getX() - pos.getX() + player.getX(),
-								b.getPos().getY() - pos.getY() + player.getY(),
-								20, 20);
-						// }
-						// catch(ConcurrentModificationException e){
-						// System.err.println("effed up");
-						// }
-
-					}
 				repaint(100);
 			} else {
 				g.clearRect(0, 0, getWidth(), getHeight());
 				System.out.println("You are dead");
 				this.setEnabled(false);
 				online = false;
+				physics.kill();
 				displayTitle();
 			}
-			// System.out.println(System.currentTimeMillis() - tt);
 
 		}
 
@@ -541,23 +530,20 @@ public class PlayerClient extends JFrame {
 		}
 
 		/**
-		 * Keeps track of the time elapsed since a player's turn began
+		 * Keeps track of the elapsed time since a shot was fired
 		 */
 		class TimerThread implements Runnable {
 			public void run() {
-				// Change to a static variable
 				start = System.currentTimeMillis();
 				while (true) {
 
-					// Do not run the timer if it is not the player's turn
+					// restart
 					if (shoot)
 						start = System.currentTimeMillis();
 
-					// Keep track of the time elapsed in seconds
-					else {
+					// Keep track of the time elapsed
+					else
 						time = (int) ((System.currentTimeMillis() - start));
-						// GamePanel.this.repaint(0);
-					}
 				}
 			}
 		}
@@ -571,18 +557,22 @@ public class PlayerClient extends JFrame {
 			public void run() {
 				// Initialize the timer
 				new Thread(new TimerThread()).start();
+
+				// Continuously listening
 				while (alive) {
-					
+
 					long time = System.currentTimeMillis();
 
 					try {
 						Thread.sleep(3);
 
+						// The command
 						short curr = in.readShort();
 						while (curr == 0) {
 						}
 
-						// System.out.println(in.available());
+						System.out.println("Waiting for prompt " + curr + ": "
+								+ (System.currentTimeMillis() - time));
 						switch (curr) {
 						// PLace object
 						case 1:
@@ -590,17 +580,9 @@ public class PlayerClient extends JFrame {
 							int[][] move = new int[2][2];
 							move[0][0] = (int) in.read();
 							break;
-						// Place player
-						case 2:
-							// colour = Integer.parseInt(command[1]);
-							// GamePanel.this.repaint(0);
-							break;
 						// Update health
 						case 3:
-
 							currHealth = in.readShort();
-
-							// GamePanel.this.repaint(0);
 							break;
 						// Request upgrade
 						case 4:
@@ -609,7 +591,7 @@ public class PlayerClient extends JFrame {
 							break;
 						// Awards points
 						case 5:
-							points += (int) in.read();
+							points = in.readShort();
 							// GamePanel.this.repaint(0);
 							break;
 						// Timed out or dead
@@ -621,25 +603,21 @@ public class PlayerClient extends JFrame {
 							break;
 						// Requesting information
 						case 7:
-
+							time = System.currentTimeMillis();
 							out.writeShort(pos.getX());
-							// System.out.println(pos.getX()+
-							// " "+pos.getY()+
-							// " "+angle + " "+upgrade+ " "+shoot);
 							out.writeShort(pos.getY());
 							out.writeShort(angle);
 							out.writeShort(upgrade);
 							out.writeBoolean(shoot);
-							out.writeShort(points);
+							// out.writeShort(points);
 							out.flush();
 							shoot = false;
-
-							// TODO Offline bullets
-							// GamePanel.this.repaint(0);
+							System.out.println("7 took: "
+									+ (System.currentTimeMillis() - time));
 							break;
 						// Sending any new objects
 						case 8:
-							// System.out.println("Receiving info");
+							time = System.currentTimeMillis();
 							ArrayList<Position> currBullets = new ArrayList<Position>();
 							// any bullets in the area
 							short count = in.readShort();
@@ -647,16 +625,17 @@ public class PlayerClient extends JFrame {
 							for (int i = 0; i < count; i++) {
 								short x = in.readShort();
 								short y = in.readShort();
+								// if (Math.abs(x - pos.getX()) < SCREEN.width
+								// && Math.abs(y - pos.getY()) < SCREEN.width)
 								currBullets.add(new Position(x, y));
 							}
 
 							bullet = currBullets;
-							count = in.readShort();
-							// System.out.println(count);
+							short count1 = in.readShort();
 
 							ArrayList<tempPlayer> currPlayers = new ArrayList<tempPlayer>();
 							// sending all players in your area
-							for (int i = 0; i < count; i++) {
+							for (int i = 0; i < count1; i++) {
 								short x = in.readShort();
 								short y = in.readShort();
 								short r = in.readShort();
@@ -664,51 +643,64 @@ public class PlayerClient extends JFrame {
 								short b = in.readShort();
 								short upgrade = in.readShort();
 								short angle = in.readShort();
+								// short points = in.readShort();
 								currPlayers
 										.add(new tempPlayer(new Position(x, y),
 												new Color(r, g, b), upgrade,
 												angle));
 							}
-							// System.out.println("players.size"+players.size());
 							players = currPlayers;
-							// System.out.println("receieved players: "
-							// + players.size() + " bullets: "
-							// + bullet.size());
+							System.out.println("Bullets: " + count + " playa: "
+									+ count1 + " 8 took: "
+									+ (System.currentTimeMillis() - time));
 							break;
 						case 9:
 							alive = false;
 							break;
 						case 10:
-							accessingBlocks = true;
-							short amount = in.readShort();
-							ArrayList<Block> tempBlocks = new ArrayList<Block>(
-									amount);
-							for (int i = 0; i < amount; i++) {
-								// accessingBlocks = true;
+
+							// Retrieves the blocks' information
+							short addOrRemove = in.readShort();
+							System.out.println("receive 10, sub: "
+									+ addOrRemove);
+							if (addOrRemove == 1) {
 								short x = in.readShort();
 								short y = in.readShort();
 								short r = in.readShort();
 								short g = in.readShort();
 								short b = in.readShort();
-								System.out.println(x+" "+y);
-								// accessingBlocks = true;
-								tempBlocks.add(new Block(new Position(x, y),
-										20, new Color(r, g, b)));
+								// Add one block
+								System.out.println(r + " " + g + " " + b);
+								Block nextBlock = new Block(new Position(x, y),
+										20, new Color(1, 1, 1));
+								ArrayList<Block> tempBlocks = (ArrayList<Block>) blocks
+										.clone();
+								tempBlocks.add(nextBlock);
+								blocks = tempBlocks;
+
+							} else {
+								short x = in.readShort();
+								short y = in.readShort();
+								System.out.println(x + " " + y);
+								ArrayList<Block> tempBlocks = (ArrayList<Block>) blocks
+										.clone();
+								for (int i = 0; i < tempBlocks.size(); i++) {
+									Block b = tempBlocks.get(i);
+									if (b.getPos().getX() == x
+											&& b.getPos().getY() == y) {
+										tempBlocks.remove(b);
+										break;
+									}
+								}
+								blocks = tempBlocks;
+
+								accessingBlocks = false;
 							}
-							accessingBlocks=false;
-							blocks = tempBlocks;
-							// Is it one block at a time?
-							// Yes every time a case 10 is called, but it is
-							// called multiplye times. (10 times every 5 seconds
-							// in server)
-							// Thread.sleep(3);
 							break;
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-					// System.out.println(System.currentTimeMillis() - time);
-					accessingBlocks = false;
 				}
 			}
 		}
@@ -740,6 +732,9 @@ public class PlayerClient extends JFrame {
 
 		}
 
+		/**
+		 * Updates the acceleration based on key events
+		 */
 		void updateAccel() {
 			accel.setX(0);
 			accel.setY(0);
@@ -786,6 +781,8 @@ public class PlayerClient extends JFrame {
 
 		@Override
 		public void keyReleased(KeyEvent e) {
+
+			// Depending on where it is pressed, the directions will be tracked
 			int key = e.getKeyCode();
 			if (key == KeyEvent.VK_UP) {
 				keysDown--;
@@ -808,11 +805,10 @@ public class PlayerClient extends JFrame {
 
 		@Override
 		public void mousePressed(MouseEvent arg0) {
+			// This is equivalent to shooting a bullet
 			this.requestFocusInWindow();
-			if (time > reloadTime) {
+			if (time > reloadTime)
 				shoot = true;
-				// System.out.println("fire");
-			}
 		}
 
 		@Override
@@ -843,6 +839,7 @@ public class PlayerClient extends JFrame {
 		private Position pos;
 		private long currTime, maxSpeed;
 		private BufferedImage back;
+		private boolean isRunning;
 
 		PhysicsThread(Vector accel, Vector velocity, Position position,
 				int maxSpeed, BufferedImage back) {
@@ -852,6 +849,11 @@ public class PlayerClient extends JFrame {
 			poso = new Vector(pos.getX(), pos.getY());
 			this.maxSpeed = maxSpeed;
 			this.back = back;
+			isRunning = true;
+		}
+
+		public void kill() {
+			isRunning = false;
 		}
 
 		Vector getVelocityRatio() {
@@ -866,7 +868,7 @@ public class PlayerClient extends JFrame {
 		}
 
 		public void run() {
-			while (true) {
+			while (isRunning) {
 				long t1 = System.currentTimeMillis();
 				try {
 					Thread.sleep(10);
@@ -926,10 +928,9 @@ public class PlayerClient extends JFrame {
 class tempPlayer {
 	private Position pos;
 	private Color c;
-	private int upgrade;
-	private int angle;
+	private short upgrade, angle;
 
-	tempPlayer(Position p, Color col, int upgrade, int angle) {
+	tempPlayer(Position p, Color col, short upgrade, short angle) {
 		pos = p;
 		c = col;
 		this.upgrade = upgrade;
