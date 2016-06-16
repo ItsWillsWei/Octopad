@@ -672,7 +672,7 @@ public class PlayerClient extends JFrame {
 								short b = in.readShort();
 								// Add one block
 								Block nextBlock = new Block(new Position(x, y),
-										20, new Color(1, 1, 1));
+										20, new Color(r, g, b));
 								ArrayList<Block> tempBlocks = (ArrayList<Block>) blocks
 										.clone();
 								tempBlocks.add(nextBlock);
@@ -681,7 +681,7 @@ public class PlayerClient extends JFrame {
 							} else {
 								short x = in.readShort();
 								short y = in.readShort();
-								System.out.println(x + " " + y);
+								//System.out.println(x + " " + y);
 								ArrayList<Block> tempBlocks = (ArrayList<Block>) blocks
 										.clone();
 								for (int i = 0; i < tempBlocks.size(); i++) {

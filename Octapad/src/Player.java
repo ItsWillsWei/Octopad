@@ -183,9 +183,12 @@ public class Player {
 				out.writeShort(player.getUpgrade());
 				out.writeShort(player.getAngle());
 			}
+			
+			System.out.println("Sending angle");
 			out.flush();
 
 		} catch (Exception e) {
+			System.out.println("fatal error");
 		}
 	}
 

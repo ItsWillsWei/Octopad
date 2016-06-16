@@ -234,7 +234,7 @@ public class Server {
 												.yChange()) - p.getPos().getY()) <= 30
 								&& currentBullet.getID() != p.getID()) {
 							p.hit(10);
-							bullets.remove(currentBullet);
+							//bullets.remove(currentBullet);
 							bulletHit = true;
 							break;
 						}
@@ -293,7 +293,7 @@ public class Server {
 							// currentBullet.getPos().getX(), 3,
 							// currentBullet.getPos().getY(), 3))) {
 							{
-								System.out.println("Should be removed");
+								//System.out.println("Should be removed");
 								blocks.remove(j);
 								// bullets.remove(currentBullet);
 								bulletHit = true;
@@ -305,8 +305,7 @@ public class Server {
 										p.setUpgrade(1);
 									else if (p.getPoints() > 10000)
 										p.setUpgrade(2);
-									else
-										p.setUpgrade(0);
+
 									p.sendCommand(new short[] { 10, 2,
 											b.getPos().getX(),
 											b.getPos().getY() });
@@ -328,7 +327,7 @@ public class Server {
 									|| time - currentBullet.time() > bulletDuration) {
 								j = 0;
 								bullets.remove(currentBullet);
-								System.out.println(bulletHit);
+								//System.out.println(bulletHit);
 								break;
 							}
 						}
