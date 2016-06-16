@@ -1,5 +1,5 @@
 
-public class Piece {
+abstract public class Piece {
 	private Position pos;
 	private int health, maxHealth;
 	Piece(Position pos){

@@ -55,7 +55,7 @@ public class Server {
 
 			back = ImageIO.read(new File("back-low.jpg"));
 			Thread ai = new Thread(new AIThread());
-			// ai.start();
+			ai.start();
 			while (true) {
 
 				System.out.println("Waiting for connection");
@@ -174,16 +174,13 @@ public class Server {
 
 		@Override
 		public void run() {
-			int count = 0;
 			while (!Thread.currentThread().isInterrupted()) {
-				count++;
 				try {
-					Thread.sleep(30);
+					Thread.sleep(50);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				long start = System.currentTimeMillis();
 
 				// Update each player
 				for (int i = 0; i < players.size(); i++) {
@@ -200,11 +197,9 @@ public class Server {
 						break;
 					}
 
-					// p.updateSurroundings(surroundingShots(p),
-					// surroundingPlayers(p));
+					// Send the most recent info to the current player
 					p.updateSurroundings(bullets, players);
 					// Requesting info from the player
-					long s = System.currentTimeMillis();
 					p.requestInfo();
 
 					// Shoot a bullet
@@ -218,13 +213,14 @@ public class Server {
 					}
 
 				}
-				long time = System.currentTimeMillis();
+				
 				// Check each bullet
 				for (int i = 0; i < bullets.size(); i++) {
 					Bullet currentBullet = bullets.get(i);
 
 					boolean bulletHit = false;
 					// Check to see if a bullet hits a player
+					long time = System.currentTimeMillis();
 					for (Player p : players) {
 						if (Math.abs(currentBullet.getPos().getX()
 								+ (int) ((time - currentBullet.time()) / 10.0 * currentBullet
@@ -234,7 +230,6 @@ public class Server {
 												.yChange()) - p.getPos().getY()) <= 30
 								&& currentBullet.getID() != p.getID()) {
 							p.hit(10);
-							//bullets.remove(currentBullet);
 							bulletHit = true;
 							break;
 						}
@@ -250,56 +245,26 @@ public class Server {
 							// System.out.println(b.getPos().getY() + " "
 							// + currentBullet.getPos().getY());
 							time = System.currentTimeMillis();
-							
-							
-							
-							
-							if (Math.abs(b.getPos().getX()+7
+
+							if (Math.abs(b.getPos().getX()
+									+ 10
 									- (currentBullet.getPos().getX() + (short) (time - currentBullet
 											.time())
 											/ 10.0
-											* currentBullet.xChange())) <= 13
-									&& (Math.abs(b.getPos().getY()+7
+											* currentBullet.xChange())) <= 10
+									&& (Math.abs(b.getPos().getY()
+											+ 10
 											- (currentBullet.getPos().getY() + (short) (time - currentBullet
 													.time())
 													/ 10.0
-													* currentBullet.yChange())) <= 13))
+													* currentBullet.yChange())) <= 10))
 
-							// b.getPos().getX() >= currentBullet.getPos()
-							// .getX()-3
-							// + (short) (time - currentBullet.time())
-							// / 10.0 * currentBullet.xChange()
-							// && b.getPos().getX() <= currentBullet
-							// .getPos().getX()
-							// + 30
-							// + (short) (time - currentBullet
-							// .time())
-							// / 10.0
-							// * currentBullet.xChange()-3
-							// && b.getPos().getY() >= currentBullet
-							// .getPos().getY()
-							// + (short) (time - currentBullet
-							// .time())
-							// / 10.0
-							// * currentBullet.yChange() -3
-							// && b.getPos().getY() <= currentBullet
-							// .getPos().getY()
-							// + 30
-							// + (short) ((time - currentBullet
-							// .time()) / 10.0 * currentBullet
-							// .yChange()))
-							// , b.getPos()
-							// .getY(), 20, 20).intersects(new Rectangle(
-							// currentBullet.getPos().getX(), 3,
-							// currentBullet.getPos().getY(), 3))) {
 							{
-								//System.out.println("Should be removed");
 								blocks.remove(j);
-								// bullets.remove(currentBullet);
 								bulletHit = true;
 								for (Player p : players) {
 									if (p.getID() == currentBullet.getID())
-										p.setPoints((short) (p.getPoints() + 10));
+										p.setPoints((short) (p.getPoints() + 100));
 									// Update upgrades/points
 									if (p.getPoints() > 1000)
 										p.setUpgrade(1);
@@ -311,8 +276,6 @@ public class Server {
 											b.getPos().getY() });
 								}
 							}
-							// System.out.println("S Player " + i+" "
-							// + (System.currentTimeMillis() - start));
 
 							if (bulletHit
 									|| currentBullet.getPos().getX() > back
@@ -327,22 +290,14 @@ public class Server {
 									|| time - currentBullet.time() > bulletDuration) {
 								j = 0;
 								bullets.remove(currentBullet);
-								//System.out.println(bulletHit);
 								break;
 							}
 						}
 					}
 
 				}
-				// System.out.println("Time for check: "
-				// + (System.currentTimeMillis() - time));
 			}
-
-			// if (count % 25 == 0)
-			// System.out.println(System.currentTimeMillis() - start);
-
 		}
-
 	}
 
 	/*

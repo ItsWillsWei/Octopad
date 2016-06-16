@@ -47,7 +47,7 @@ public class PlayerClient extends JFrame {
 		private static Socket sock;
 		private static DataInputStream in;
 		private static DataOutputStream out;
-		private static String ip = "localhost";
+		private static String ip = "localhost";//"10.242.165.88";
 		private static int port = 421;
 
 		// Player information
@@ -56,7 +56,6 @@ public class PlayerClient extends JFrame {
 		private short currHealth;
 		private static long start;
 		private boolean alive = true;
-		private int playerType;
 		public boolean online, accessingBlocks;
 
 		private ArrayList<Block> blocks;
@@ -85,10 +84,9 @@ public class PlayerClient extends JFrame {
 		private boolean shoot;
 		private short reloadTime;
 		private int points;
-		private ArrayList<Position> bullet, blocksToRemove;
+		private ArrayList<Position> bullet;;
 		private ArrayList<tempPlayer> players;
 		private static int time;
-		private static boolean timedOut;
 
 		/**
 		 * Creates a new GamePanel
@@ -96,7 +94,6 @@ public class PlayerClient extends JFrame {
 		public GamePanel() {
 			setLayout(new GridLayout(5, 5));
 			setUpTitle();
-			createPlayer();
 
 			try {
 				back = ImageIO.read(new File("back-low.jpg"));// new
@@ -120,7 +117,7 @@ public class PlayerClient extends JFrame {
 			nameInput.setBackground(Color.red);
 			nameInput.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					System.out.println("Name");
+					//System.out.println("Name");
 					ipInput.setSelected(false);
 					portInput.setSelected(false);
 
@@ -169,7 +166,7 @@ public class PlayerClient extends JFrame {
 			serverButton.setBackground(Color.RED);
 			serverButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					System.out.println("Joining server");
+					//System.out.println("Joining server");
 					online = true;
 					// Connects to the server
 					boolean errorConnecting = false;
@@ -190,8 +187,8 @@ public class PlayerClient extends JFrame {
 						short b = in.readShort();
 						pos = new Position(x, y);
 						c = new Color(r, g, b);
-						System.out.println(pos.getX() + " " + pos.getY());
-						System.out.println(c);
+						//System.out.println(pos.getX() + " " + pos.getY());
+						//System.out.println(c);
 
 						// Starts the communication witht the server and the
 						// physics engine
@@ -243,7 +240,6 @@ public class PlayerClient extends JFrame {
 			accel = new Vector(0, 0);
 			player = new Position(0, 0);
 			bullet = new ArrayList<Position>();
-			blocksToRemove = new ArrayList<Position>();
 			directionsPressed = new ArrayList<Integer>();
 			players = new ArrayList<tempPlayer>();
 			blocks = new ArrayList<Block>();
@@ -268,10 +264,6 @@ public class PlayerClient extends JFrame {
 			add(new JLabel(""));
 			add(serverButton);
 			add(new JLabel(""));
-		}
-
-		void createPlayer() {
-			playerType = 1;
 		}
 
 		/**
@@ -323,9 +315,9 @@ public class PlayerClient extends JFrame {
 						+ displayX, -1 * back.getHeight() / 2 - pos.getY()
 						+ displayY, this);
 
-				if (points > 1000)
+				if (points > 500)
 					upgrade = 1;
-				if (points > 10000)
+				if (points > 1000)
 					upgrade = 2;
 				drawPads(g, upgrade, player, angle, c);
 
@@ -356,7 +348,6 @@ public class PlayerClient extends JFrame {
 					}
 				}
 
-				long t1 = System.currentTimeMillis();
 				// Bullets
 				g.setColor(Color.red);
 				for (Position p : bullet) {
@@ -370,23 +361,6 @@ public class PlayerClient extends JFrame {
 					if (spawn.contains(new Point((int) tempBullet.getCenterX(),
 							(int) tempBullet.getCenterY())))
 						points += 1;
-
-					// TODO if (!accessingBlocks)
-					// for (int block = 0; block < blocks.size(); block++) {
-					// Position blockPos = blocks.get(block).getPos();
-					// if (new Rectangle(blockPos.getX() - pos.getX()
-					// + player.getX(), blockPos.getY()
-					// - pos.getY() + player.getY(), 20, 20)
-					// .contains(tempBullet.getCenterX(),
-					// tempBullet.getCenterY())) {
-					// blocks.remove(block);
-					// blocksToRemove.add(blockPos);
-					// points += 10;
-					// }
-					// }
-					// g.fillOval(p.getX() - 3 - pos.getX() + displayX, p.getY()
-					// - 3 - pos.getY() + displayY, 7, 7);
-
 				}
 
 				for (Block b : blocks) {
@@ -396,16 +370,9 @@ public class PlayerClient extends JFrame {
 					g.fillRect(b.getPos().getX() - pos.getX() + player.getX(),
 							b.getPos().getY() - pos.getY() + player.getY(), 20,
 							20);
-					// if (new Rectangle(b.getPos().getX(), b.getPos()
-					// .getY(), 20, 20).contains(new Point(
-					// (int) tempBullet.getCenterX(),
-					// (int) tempBullet.getCenterY()))) {
-					// points += 10;
-					// }
-					// blocks.remove(b);
 				}
 
-				g.setColor(Color.MAGENTA);
+				g.setColor(Color.BLACK);
 				g.drawString("Health: " + currHealth, 950, 200);
 				g.drawString("Points: " + points, 950, 250);
 
@@ -414,7 +381,7 @@ public class PlayerClient extends JFrame {
 				repaint(100);
 			} else {
 				g.clearRect(0, 0, getWidth(), getHeight());
-				System.out.println("You are dead");
+				//System.out.println("You are dead");
 				this.setEnabled(false);
 				online = false;
 				physics.kill();
@@ -569,25 +536,14 @@ public class PlayerClient extends JFrame {
 						// The command
 						short curr = in.readShort();
 						while (curr == 0) {
+							Thread.sleep(2);
 						}
 
-						System.out.println("Waiting for prompt " + curr + ": "
-								+ (System.currentTimeMillis() - time));
 						switch (curr) {
 						// PLace object
-						case 1:
-							// showTime = false;
-							int[][] move = new int[2][2];
-							move[0][0] = (int) in.read();
-							break;
 						// Update health
 						case 3:
 							currHealth = in.readShort();
-							break;
-						// Request upgrade
-						case 4:
-							// upgrade option =true
-							// GamePanel.this.repaint(0);
 							break;
 						// Awards points
 						case 5:
@@ -597,9 +553,6 @@ public class PlayerClient extends JFrame {
 						// Timed out or dead
 						case 6:
 							alive = false;
-							timedOut = true;
-							// TODO end here but just testing right now
-							// System.exit(0);
 							break;
 						// Requesting information
 						case 7:
@@ -609,7 +562,6 @@ public class PlayerClient extends JFrame {
 							out.writeShort(angle);
 							out.writeShort(upgrade);
 							out.writeBoolean(shoot);
-							// out.writeShort(points);
 							out.flush();
 							shoot = false;
 							// System.out.println("7 took: "
@@ -643,10 +595,6 @@ public class PlayerClient extends JFrame {
 								short b = in.readShort();
 								short upgrade = in.readShort();
 								short angle = in.readShort();
-								// short points = in.readShort();
-								System.out.println(x + " " + y + " " + r + " "
-										+ g + " " + b + " " + upgrade + " "
-										+ angle);
 								currPlayers
 										.add(new tempPlayer(new Position(x, y),
 												new Color(r, g, b), upgrade,
@@ -654,9 +602,6 @@ public class PlayerClient extends JFrame {
 							}
 							players = currPlayers;
 
-							break;
-						case 9:
-							alive = false;
 							break;
 						case 10:
 
@@ -672,7 +617,7 @@ public class PlayerClient extends JFrame {
 								short b = in.readShort();
 								// Add one block
 								Block nextBlock = new Block(new Position(x, y),
-										20, new Color(r, g, b));
+										20, new Color(1, 1, 1));
 								ArrayList<Block> tempBlocks = (ArrayList<Block>) blocks
 										.clone();
 								tempBlocks.add(nextBlock);
@@ -688,7 +633,6 @@ public class PlayerClient extends JFrame {
 									Block b = tempBlocks.get(i);
 									if (b.getPos().getX() == x
 											&& b.getPos().getY() == y) {
-										System.out.println("removed");
 										tempBlocks.remove(b);
 										break;
 									}
@@ -835,7 +779,12 @@ public class PlayerClient extends JFrame {
 		}
 	}
 
+	/**
+	 * Takes care of the movements, acceleration etc.
+	 *
+	 */
 	static class PhysicsThread implements Runnable {
+		// Required variables
 		private Vector accel, velocity, poso;
 		private Position pos;
 		private long currTime, maxSpeed;

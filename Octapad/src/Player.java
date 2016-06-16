@@ -8,14 +8,12 @@ public class Player {
 	private Socket sock;
 	private DataInputStream in;
 	private DataOutputStream out;
-	private int timeOut = 200;
+	private int timeOut = 300;
 	
 	//Game variables
 	private int id;
 	private int inactiveCount = 0;
 	private short upgrade = 0;
-	private ArrayList<Bullet> bullet;
-	private ArrayList<Player> players;
 	private short points = 0;
 	private Color color;
 	private int health = 90;
@@ -110,19 +108,6 @@ public class Player {
 		return shoot;
 	}
 
-	public ArrayList<Player> getSurroundingPlayers() {
-		return players;
-	}
-
-	public void setSurroundings(ArrayList<Player> p, ArrayList<Bullet> b) {
-		players = p;
-		bullet = b;
-	}
-
-	public ArrayList<Bullet> getSurroundingBullets() {
-		return bullet;
-	}
-
 	public int getID() {
 		return id;
 	}
@@ -151,44 +136,6 @@ public class Player {
 			}
 			out.flush();
 		} catch (IOException r) {
-		}
-	}
-
-	/**
-	 * Checks the player's immediate area for bullets and other players
-	 */
-	public void updateSurroundings() {
-		try {
-			//in.available();
-			out.writeShort(8);
-			out.writeShort(bullet.size());
-			long time = System.currentTimeMillis();
-
-			//Check all bullets
-			for (Bullet bull : bullet) {
-				out.writeShort(bull.getPos().getX()
-						+ (int) (bull.xChange() * (time - bull.time()) / 10));
-				out.writeShort(bull.getPos().getY()
-						+ (int) (bull.yChange() * (time - bull.time()) / 10));
-			}
-
-			//Check all players
-			out.writeShort(players.size());
-			for (Player player : players) {
-				out.writeShort(player.getPos().getX());
-				out.writeShort(player.getPos().getY());
-				out.writeShort(player.getColour().getRed());
-				out.writeShort(player.getColour().getGreen());
-				out.writeShort(player.getColour().getBlue());
-				out.writeShort(player.getUpgrade());
-				out.writeShort(player.getAngle());
-			}
-			
-			System.out.println("Sending angle");
-			out.flush();
-
-		} catch (Exception e) {
-			System.out.println("fatal error");
 		}
 	}
 
@@ -253,7 +200,7 @@ public class Player {
 				&& System.currentTimeMillis() - start < timeOut) {
 
 			try {
-				Thread.sleep(3);
+				Thread.sleep(5);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
