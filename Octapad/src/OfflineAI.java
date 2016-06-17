@@ -9,6 +9,7 @@ import java.util.*;
  */
 public class OfflineAI {
 	// Game variables
+	//private OfflinePlayer player;
 	private int health = 100;
 	private int points = 0;
 	private boolean alive = true;
@@ -31,12 +32,16 @@ public class OfflineAI {
 	/**
 	 * Creates a new pad that tracks the human players and tries to shoot them
 	 */
-	public OfflineAI(short x, short y, short id) {
+	//, OfflinePlayer g
+	public OfflineAI(Position p, short id) {
 		// Connects to the server
-		pos = new Position(x, y);
+		//player = g;
+		pos = p;
 		this.id = id;
 		angle = (int) (Math.random() * 360);
-		randomMovements();		
+		randomMovements();
+		color = new Color((int) (Math.random() * 256),
+				(int) (Math.random() * 256), (int) (Math.random() * 256));
 	}
 
 	public double getBulletSpeed() {
@@ -72,7 +77,7 @@ public class OfflineAI {
 	}
 
 	public boolean shooting() {
-		return shooting;
+		return ((int) (Math.random() * 25) == 0 ? true : false);
 	}
 
 	public int getAngle() {
@@ -89,6 +94,10 @@ public class OfflineAI {
 
 	public int getPoints() {
 		return points;
+	}
+
+	public void setPlayers(ArrayList<SimplePlayer> g) {
+		players = g;
 	}
 
 	public void setBlocks(ArrayList<Block> b) {
@@ -122,6 +131,8 @@ public class OfflineAI {
 	 * Determine the closest player to the AI
 	 */
 	public void closestPlayer() {
+		if (!alive)
+			System.exit(0);
 		int min = Integer.MAX_VALUE;
 		SimplePlayer close = null;
 		// Check all the players on the server to determine a closest player
@@ -146,6 +157,7 @@ public class OfflineAI {
 		}
 		// If there are no players, stop moving AI
 		if (close == null) {
+			System.out.println("not here");
 			angle = 180;
 			velocity = new Vector(0, 0);
 		}
@@ -156,10 +168,10 @@ public class OfflineAI {
 			double x = pos.getX() - close.getPos().getX();
 
 			// Face the AI toward the player
-			if (x < 0.5 && x > -0.5) {
-				angle = (y <= 0 ? 90 : 270);
-			} else
-				angle = (int) (180 / Math.PI * Math.atan(y / x));
+			// if (x < 0.5 && x > -0.5) {
+			// angle = (y <= 0 ? 90 : 270);
+			// } else
+			angle = (int) (180 / Math.PI * Math.atan(y / x));
 
 			if (pos.getX() > close.getPos().getX()) {
 				angle += 180;

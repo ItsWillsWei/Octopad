@@ -20,6 +20,7 @@ import javax.swing.*;
 public class OfflinePlayer extends JFrame {
 	// Final variables for the pane
 	private static GamePanel game;
+	public static boolean started = false;
 
 	// Visual variables
 	private static ArrayList<Block> blocks;
@@ -30,7 +31,8 @@ public class OfflinePlayer extends JFrame {
 	private static ArrayList<SimplePlayer> players = new ArrayList<SimplePlayer>();
 	private static int points = 0;
 	private static Color color;
-	private static int health = 90;
+	private static int currHealth = 100;
+	private static int maxHealth = 100;
 	private static boolean alive = true;
 
 	// Physics Variables
@@ -59,8 +61,13 @@ public class OfflinePlayer extends JFrame {
 	/**
 	 * Creates a new PlayerClient object
 	 */
-	public OfflinePlayer() {
+	public OfflinePlayer(ArrayList<SimplePlayer> p) {
 		super("Octopad");
+		try {
+			Thread.sleep(100);
+		} catch (Exception e) {
+		}
+		players = p;
 		Thread t = new Thread(new TimerThread());
 		t.start();
 		color = new Color((int) (Math.random() * 256),
@@ -92,8 +99,8 @@ public class OfflinePlayer extends JFrame {
 	}
 
 	public void hit(int damage) {
-		health -= damage;
-		if (health <= 0)
+		currHealth -= damage;
+		if (currHealth <= 0)
 			alive = false;
 	}
 
@@ -149,11 +156,8 @@ public class OfflinePlayer extends JFrame {
 	 */
 	static class GamePanel extends JPanel implements MouseListener, KeyListener {
 		// Player information
-		private short maxHealth;
-		private short currHealth;
 
 		private boolean alive = true;
-		private int playerType;
 		public boolean online, accessingBlocks;
 
 		// Display information variables
@@ -228,6 +232,7 @@ public class OfflinePlayer extends JFrame {
 			offlineButton.setBackground(Color.GREEN);
 			offlineButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
+					started = true;
 					online = false;
 					pos = new Position(
 							(short) (Math.random() * (WIDTH - 30)) + 20,
@@ -318,6 +323,7 @@ public class OfflinePlayer extends JFrame {
 		 */
 		@Override
 		public void paintComponent(Graphics g) {
+			//System.out.println("paint component started");
 			super.paintComponent(g);
 			if (alive) {
 				this.setEnabled(true);
@@ -386,7 +392,9 @@ public class OfflinePlayer extends JFrame {
 
 				// Other players
 				for (SimplePlayer p : players) {
+					
 					if (!p.getColor().equals(color)) {
+						System.out.println("drawing more");
 						drawPads(g, p.getUpgrade(), new Position(player.getX()
 								+ p.getPos().getX() - pos.getX(), player.getY()
 								+ p.getPos().getY() - pos.getY()),
@@ -458,7 +466,7 @@ public class OfflinePlayer extends JFrame {
 				physics.kill();
 				displayTitle();
 			}
-
+			//System.out.println("paint component ended");
 		}
 
 		void drawPads(Graphics g, int padType, Position center, int angle,
