@@ -63,10 +63,6 @@ public class OfflinePlayer extends JFrame {
 	 */
 	public OfflinePlayer(ArrayList<SimplePlayer> p) {
 		super("Octopad");
-		try {
-			Thread.sleep(100);
-		} catch (Exception e) {
-		}
 		players = p;
 		Thread t = new Thread(new TimerThread());
 		t.start();
@@ -323,7 +319,7 @@ public class OfflinePlayer extends JFrame {
 		 */
 		@Override
 		public void paintComponent(Graphics g) {
-			//System.out.println("paint component started");
+			// System.out.println("paint component started");
 			super.paintComponent(g);
 			if (alive) {
 				this.setEnabled(true);
@@ -392,9 +388,7 @@ public class OfflinePlayer extends JFrame {
 
 				// Other players
 				for (SimplePlayer p : players) {
-					
 					if (!p.getColor().equals(color)) {
-						System.out.println("drawing more");
 						drawPads(g, p.getUpgrade(), new Position(player.getX()
 								+ p.getPos().getX() - pos.getX(), player.getY()
 								+ p.getPos().getY() - pos.getY()),
@@ -466,7 +460,7 @@ public class OfflinePlayer extends JFrame {
 				physics.kill();
 				displayTitle();
 			}
-			//System.out.println("paint component ended");
+			// System.out.println("paint component ended");
 		}
 
 		void drawPads(Graphics g, int padType, Position center, int angle,
@@ -597,6 +591,14 @@ public class OfflinePlayer extends JFrame {
 					keysDown++;
 					directionsPressed.add(key);
 					updateAccel();
+				} else if (key == KeyEvent.VK_W) {
+
+				} else if (key == KeyEvent.VK_A) {
+					
+				} else if (key == KeyEvent.VK_S) {
+
+				} else if (key == KeyEvent.VK_D) {
+
 				}
 			}
 

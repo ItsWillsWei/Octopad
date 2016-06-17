@@ -5,11 +5,11 @@ import java.util.*;
 
 /**
  * Class that keeps track of an AI player
- *
+ * 
  */
 public class OfflineAI {
 	// Game variables
-	//private OfflinePlayer player;
+	// private OfflinePlayer player;
 	private int health = 100;
 	private int points = 0;
 	private boolean alive = true;
@@ -32,10 +32,10 @@ public class OfflineAI {
 	/**
 	 * Creates a new pad that tracks the human players and tries to shoot them
 	 */
-	//, OfflinePlayer g
+	// , OfflinePlayer g
 	public OfflineAI(Position p, short id) {
 		// Connects to the server
-		//player = g;
+		// player = g;
 		pos = p;
 		this.id = id;
 		angle = (int) (Math.random() * 360);
@@ -50,8 +50,9 @@ public class OfflineAI {
 
 	public void hit(int damage) {
 		health -= damage;
-		if (health <= 0)
+		if (health <= 0) {
 			alive = false;
+		}
 	}
 
 	public int getID() {
@@ -131,8 +132,6 @@ public class OfflineAI {
 	 * Determine the closest player to the AI
 	 */
 	public void closestPlayer() {
-		if (!alive)
-			System.exit(0);
 		int min = Integer.MAX_VALUE;
 		SimplePlayer close = null;
 		// Check all the players on the server to determine a closest player
@@ -157,7 +156,6 @@ public class OfflineAI {
 		}
 		// If there are no players, stop moving AI
 		if (close == null) {
-			System.out.println("not here");
 			angle = 180;
 			velocity = new Vector(0, 0);
 		}

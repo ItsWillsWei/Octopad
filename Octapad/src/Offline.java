@@ -25,6 +25,7 @@ public class Offline {
 	private BufferedImage back;
 	private static boolean blocksAccessing = false;
 	OfflinePlayer player;
+	private boolean alive = true;
 
 	public static void main(String[] args) {
 		new Offline();
@@ -66,24 +67,26 @@ public class Offline {
 	 */
 	class AIThread implements Runnable {
 		public void run() {
-			try {
-				Thread.sleep(1400);
-			} catch (Exception e) {
+			for (int i = 0; i < 3; i++) {
+				try {
+					Thread.sleep(1400);
+				} catch (Exception e) {
+				}
+				Position current = new Position(
+						(short) (Math.random() * (1024 - 30)) + 20,
+						(short) (Math.random() * (768 - 30)) + 20);
+				OfflineAI ai = new OfflineAI(current, noOfPlayers);
+				ai.setPlayers(all);
+				int x = ai.getPos().getX();
+				int y = ai.getPos().getY();
+				Color c = new Color(ai.getColour().getRed(), ai.getColour()
+						.getGreen(), ai.getColour().getBlue());
+				int upgrade = ai.getUpgrade();
+				int angle = ai.getAngle();
+				all.add(new SimplePlayer(x, y, c, upgrade, angle));
+				players.add(ai);
+				noOfPlayers++;
 			}
-			Position current = new Position(
-					(short) (Math.random() * (1024 - 30)) + 20,
-					(short) (Math.random() * (768 - 30)) + 20);
-			OfflineAI ai = new OfflineAI(current, noOfPlayers);
-			ai.setPlayers(all);
-			int x = ai.getPos().getX();
-			int y = ai.getPos().getY();
-			Color c = new Color(ai.getColour().getRed(), ai.getColour()
-					.getGreen(), ai.getColour().getBlue());
-			int upgrade = ai.getUpgrade();
-			int angle = ai.getAngle();
-			all.add(new SimplePlayer(x, y, c, upgrade, angle));
-			players.add(ai);
-			noOfPlayers++;
 		}
 	}
 
@@ -125,9 +128,7 @@ public class Offline {
 	}
 
 	public void run() {
-		while (true) {
-
-			long start = System.currentTimeMillis();
+		while (alive) {
 
 			try {
 				Thread.sleep(30);
@@ -135,19 +136,16 @@ public class Offline {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-
+			long start = System.currentTimeMillis();
 			all.get(0).setPos(player.getPos());
 			all.get(0).setAngle(player.getAngle());
 			for (int i = 1; i < all.size(); i++) {
-				if (players.get(i).alive()) {
-					all.get(i).setPos(players.get(i - 1).getPos());
-					all.get(i).setAngle(players.get(i - 1).getAngle());
-				} else {
-					players.remove(i);
-					i = 0;
-				}
+				all.get(i).setPos(players.get(i - 1).getPos());
+				all.get(i).setAngle(players.get(i - 1).getAngle());
+
 			}
 
+		
 			// Shoot a bullet
 			if (player.shooting()) {
 				bullets.add(new Bullet(player.getPos(), player.getID(),
@@ -178,6 +176,8 @@ public class Offline {
 									* ai.getBulletSpeed())));
 				}
 			}
+			
+		
 
 			// Display all blocks
 			ArrayList<Block> temp = (ArrayList<Block>) blocks.clone();
@@ -187,6 +187,8 @@ public class Offline {
 				a.closestPlayer();
 			}
 
+			
+			
 			// Check each bullet
 			for (int i = 0; i < bullets.size(); i++) {
 				Bullet currentBullet = bullets.get(i);
@@ -202,7 +204,16 @@ public class Offline {
 										.yChange()) - player.getPos().getY()) <= 30
 						&& currentBullet.getID() != player.getID()) {
 					player.hit(10);
-					System.out.println("hit someone");
+
+					if (!player.alive()) {
+						player = new OfflinePlayer(all);
+						players.clear();
+						all.clear();
+						blocks.clear();
+						all.add(new SimplePlayer(player.getPos().getX(), player
+								.getPos().getY(), player.getColour(), player
+								.getUpgrade(), player.getAngle()));
+					}
 					// bullets.remove(currentBullet);
 					bulletHit = true;
 				}
@@ -221,13 +232,14 @@ public class Offline {
 						c.hit(10);
 
 						if (!c.alive()) {
-							all.remove(players.indexOf(c));
+							all.remove(players.indexOf(c) + 1);
 							players.remove(c);
 							j = -1;
 						}
 
 						// bullets.remove(currentBullet);
 						bulletHit = true;
+						break;
 					}
 				}
 
@@ -289,7 +301,7 @@ public class Offline {
 					}
 				}
 			}
-			// System.out.println((System.currentTimeMillis() - start));
+			 System.out.println((System.currentTimeMillis() - start));
 		}
 
 	}
