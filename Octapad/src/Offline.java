@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
  * @version Jun 10, 2016
  */
 public class Offline {
+	public static boolean accessingAll = false;
 	private int bulletDuration = 5000;
 	private short noOfPlayers = 0, noOfBlocks = 0;
 	private ArrayList<SimplePlayer> all = new ArrayList<SimplePlayer>();
@@ -67,7 +68,7 @@ public class Offline {
 	 */
 	class AIThread implements Runnable {
 		public void run() {
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 1; i++) {
 				try {
 					Thread.sleep(1400);
 				} catch (Exception e) {
@@ -75,7 +76,7 @@ public class Offline {
 				Position current = new Position(
 						(short) (Math.random() * (1024 - 30)) + 20,
 						(short) (Math.random() * (768 - 30)) + 20);
-				OfflineAI ai = new OfflineAI(current, noOfPlayers);
+				OfflineAI ai = new OfflineAI(current, noOfPlayers, false);
 				ai.setPlayers(all);
 				int x = ai.getPos().getX();
 				int y = ai.getPos().getY();
@@ -83,9 +84,11 @@ public class Offline {
 						.getGreen(), ai.getColour().getBlue());
 				int upgrade = ai.getUpgrade();
 				int angle = ai.getAngle();
+				accessingAll = true;
 				all.add(new SimplePlayer(x, y, c, upgrade, angle));
 				players.add(ai);
 				noOfPlayers++;
+				accessingAll = false;
 			}
 		}
 	}
@@ -137,6 +140,9 @@ public class Offline {
 				e1.printStackTrace();
 			}
 			long start = System.currentTimeMillis();
+			while (Offline.accessingAll) {
+			}
+		
 			all.get(0).setPos(player.getPos());
 			all.get(0).setAngle(player.getAngle());
 			for (int i = 1; i < all.size(); i++) {
@@ -145,7 +151,6 @@ public class Offline {
 
 			}
 
-		
 			// Shoot a bullet
 			if (player.shooting()) {
 				bullets.add(new Bullet(player.getPos(), player.getID(),
@@ -176,19 +181,19 @@ public class Offline {
 									* ai.getBulletSpeed())));
 				}
 			}
-			
-		
 
 			// Display all blocks
 			ArrayList<Block> temp = (ArrayList<Block>) blocks.clone();
 			player.setBlocks(temp);
 
+			if (player.getPoints() >= 1000 && player.getUpgrade() != 1) {
+				player.setUpgrade(1);
+			} else if (player.getPoints() > 10000 && player.getUpgrade() != 2)
+				player.setUpgrade(2);
 			for (OfflineAI a : players) {
 				a.closestPlayer();
 			}
 
-			
-			
 			// Check each bullet
 			for (int i = 0; i < bullets.size(); i++) {
 				Bullet currentBullet = bullets.get(i);
@@ -232,6 +237,8 @@ public class Offline {
 						c.hit(10);
 
 						if (!c.alive()) {
+							while (Offline.accessingAll) {
+							}
 							all.remove(players.indexOf(c) + 1);
 							players.remove(c);
 							j = -1;
@@ -274,9 +281,11 @@ public class Offline {
 								if (playa.getID() == currentBullet.getID())
 									playa.setPoints((short) (playa.getPoints() + 10));
 								// Update upgrades/points
-								if (playa.getPoints() > 1000)
+								if (playa.getPoints() > 1000
+										&& player.getUpgrade() != 1)
 									playa.setUpgrade(1);
-								else if (playa.getPoints() > 10000)
+								else if (playa.getPoints() > 10000
+										&& player.getUpgrade() != 2)
 									playa.setUpgrade(2);
 								playa.setBlocks(blocks);
 							}
@@ -301,7 +310,7 @@ public class Offline {
 					}
 				}
 			}
-			 System.out.println((System.currentTimeMillis() - start));
+			//System.out.println((System.currentTimeMillis() - start));
 		}
 
 	}

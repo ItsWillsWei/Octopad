@@ -15,6 +15,7 @@ public class OfflineAI {
 	private boolean alive = true;
 	private ArrayList<SimplePlayer> players = new ArrayList<SimplePlayer>();
 	private ArrayList<Block> blocks = new ArrayList<Block>();
+	private boolean dodger;
 
 	// Physics Variables
 	private Position pos;
@@ -25,6 +26,7 @@ public class OfflineAI {
 
 	private static int id;
 	private Color color;
+	private static int damage = 10;
 
 	private static boolean shooting;
 	private double bulletSpeed = 3;
@@ -33,15 +35,20 @@ public class OfflineAI {
 	 * Creates a new pad that tracks the human players and tries to shoot them
 	 */
 	// , OfflinePlayer g
-	public OfflineAI(Position p, short id) {
+	public OfflineAI(Position p, short id, boolean d) {
 		// Connects to the server
 		// player = g;
+		dodger = d;
 		pos = p;
 		this.id = id;
 		angle = (int) (Math.random() * 360);
 		randomMovements();
 		color = new Color((int) (Math.random() * 256),
 				(int) (Math.random() * 256), (int) (Math.random() * 256));
+	}
+
+	public int getDamage() {
+		return damage;
 	}
 
 	public double getBulletSpeed() {
@@ -175,6 +182,11 @@ public class OfflineAI {
 				angle += 180;
 			} else if (angle != 270 && pos.getY() > close.getPos().getY())
 				angle += 360;
+
+			if (dodger) {
+				angle = (angle + 180) % 360;
+			}
+
 			double rad = angle / 180.0 * Math.PI;
 
 			// Stop moving if there ar eno players

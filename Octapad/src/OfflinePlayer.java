@@ -26,8 +26,9 @@ public class OfflinePlayer extends JFrame {
 	private static ArrayList<Block> blocks;
 
 	// Game variables
+	private static int damage = 10;
 	private static int id;
-	private static short upgrade = 0;
+	private static int upgrade = 0;
 	private static ArrayList<SimplePlayer> players = new ArrayList<SimplePlayer>();
 	private static int points = 0;
 	private static Color color;
@@ -74,6 +75,10 @@ public class OfflinePlayer extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		pack();
 		this.setVisible(true);
+	}
+
+	public int getDamage() {
+		return damage;
 	}
 
 	/**
@@ -140,7 +145,20 @@ public class OfflinePlayer extends JFrame {
 	}
 
 	public void setUpgrade(int upgrade) {
-		this.upgrade = (short) upgrade;
+		this.upgrade = upgrade;
+		if (upgrade == 0)
+			maxHealth = 100;
+		else if (upgrade == 1) {
+			currHealth = 200;
+			maxHealth = 200;
+			reloadTime = 200;
+			damage+=10;
+			System.out.println("next upgrade");
+		} else {
+			currHealth = 300;
+			maxHealth = 3000;
+		}
+
 	}
 
 	public int getPoints() {
@@ -225,6 +243,7 @@ public class OfflinePlayer extends JFrame {
 			});
 
 			offlineButton = new KButton("Play Offline", 300, 100);
+			offlineButton.setFont(new Font("Sans-Serif", 18, 18));
 			offlineButton.setBackground(Color.GREEN);
 			offlineButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -275,7 +294,7 @@ public class OfflinePlayer extends JFrame {
 			bullets = new ArrayList<Position>();
 			directionsPressed = new ArrayList<Integer>();
 			blocks = new ArrayList<Block>();
-			reloadTime = 100;
+			reloadTime = 300;
 			points = 0;
 			maxSpeed = 800;
 			maxAccel = 2000;
@@ -363,10 +382,10 @@ public class OfflinePlayer extends JFrame {
 						+ displayX, -1 * back.getHeight() / 2 - pos.getY()
 						+ displayY, this);
 
-				if (points > 1000)
-					upgrade = 1;
-				if (points > 10000)
-					upgrade = 2;
+//				if (points > 1000)
+//					upgrade = 1;
+//				if (points > 10000)
+//					upgrade = 2;
 				drawPads(g, upgrade, player, angle, color);
 
 				// Draw your health bar
@@ -387,6 +406,7 @@ public class OfflinePlayer extends JFrame {
 				((Graphics2D) g).fill(spawn);
 
 				// Other players
+				Offline.accessingAll = true;
 				for (SimplePlayer p : players) {
 					if (!p.getColor().equals(color)) {
 						drawPads(g, p.getUpgrade(), new Position(player.getX()
@@ -395,7 +415,7 @@ public class OfflinePlayer extends JFrame {
 								p.getAngle(), p.getColor());
 					}
 				}
-
+				Offline.accessingAll = false;
 				long t1 = System.currentTimeMillis();
 				// Bullets
 				g.setColor(Color.red);
@@ -592,13 +612,21 @@ public class OfflinePlayer extends JFrame {
 					directionsPressed.add(key);
 					updateAccel();
 				} else if (key == KeyEvent.VK_W) {
-
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
 				} else if (key == KeyEvent.VK_A) {
-					
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
 				} else if (key == KeyEvent.VK_S) {
-
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
 				} else if (key == KeyEvent.VK_D) {
-
+					keysDown++;
+					directionsPressed.add(key);
+					updateAccel();
 				}
 			}
 
@@ -615,13 +643,25 @@ public class OfflinePlayer extends JFrame {
 				case KeyEvent.VK_UP:
 					accel.setY(maxAccel * -1);
 					break;
+				case KeyEvent.VK_W:
+					accel.setY(maxAccel * -1);
+					break;
 				case KeyEvent.VK_LEFT:
+					accel.setX(maxAccel * -1);
+					break;
+				case KeyEvent.VK_A:
 					accel.setX(maxAccel * -1);
 					break;
 				case KeyEvent.VK_DOWN:
 					accel.setY(maxAccel);
 					break;
+				case KeyEvent.VK_S:
+					accel.setY(maxAccel);
+					break;
 				case KeyEvent.VK_RIGHT:
+					accel.setX(maxAccel);
+					break;
+				case KeyEvent.VK_D:
 					accel.setX(maxAccel);
 					break;
 				}
@@ -647,6 +687,26 @@ public class OfflinePlayer extends JFrame {
 						&& directionsPressed.contains(KeyEvent.VK_RIGHT)) {
 					accel.setX(diagonal);
 					accel.setY(diagonal);
+				} else if (directionsPressed.contains(KeyEvent.VK_W)
+						&& directionsPressed.contains(KeyEvent.VK_A)) {
+					accel.setX(diagonal * -1);
+					accel.setY(diagonal * -1);
+				} else if (directionsPressed.contains(KeyEvent.VK_W)
+						&& directionsPressed.contains(KeyEvent.VK_S)) {
+				} else if (directionsPressed.contains(KeyEvent.VK_W)
+						&& directionsPressed.contains(KeyEvent.VK_D)) {
+					accel.setX(diagonal);
+					accel.setY(diagonal * -1);
+				} else if (directionsPressed.contains(KeyEvent.VK_A)
+						&& directionsPressed.contains(KeyEvent.VK_S)) {
+					accel.setX(diagonal * -1);
+					accel.setY(diagonal);
+				} else if (directionsPressed.contains(KeyEvent.VK_A)
+						&& directionsPressed.contains(KeyEvent.VK_D)) {
+				} else if (directionsPressed.contains(KeyEvent.VK_S)
+						&& directionsPressed.contains(KeyEvent.VK_D)) {
+					accel.setX(diagonal);
+					accel.setY(diagonal);
 				}
 			}
 		}
@@ -669,6 +729,22 @@ public class OfflinePlayer extends JFrame {
 				directionsPressed.remove((Object) key);
 				updateAccel();
 			} else if (key == KeyEvent.VK_RIGHT) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_W) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_A) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_S) {
+				keysDown--;
+				directionsPressed.remove((Object) key);
+				updateAccel();
+			} else if (key == KeyEvent.VK_D) {
 				keysDown--;
 				directionsPressed.remove((Object) key);
 				updateAccel();
