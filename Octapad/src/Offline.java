@@ -46,7 +46,7 @@ public class Offline {
 				.getGreen(), player.getColour().getBlue());
 		int upgrade = player.getUpgrade();
 		int angle = player.getAngle();
-		all.add(new SimplePlayer(x, y, c, upgrade, angle));
+		all.add(new SimplePlayer(x, y, c, upgrade, angle, 1));
 		noOfPlayers++;
 		player.setVisible(true);
 		while (!OfflinePlayer.started) {
@@ -85,7 +85,7 @@ public class Offline {
 				int upgrade = ai.getUpgrade();
 				int angle = ai.getAngle();
 				accessingAll = true;
-				all.add(new SimplePlayer(x, y, c, upgrade, angle));
+				all.add(new SimplePlayer(x, y, c, upgrade, angle,1));
 				players.add(ai);
 				noOfPlayers++;
 				accessingAll = false;
@@ -217,7 +217,7 @@ public class Offline {
 						blocks.clear();
 						all.add(new SimplePlayer(player.getPos().getX(), player
 								.getPos().getY(), player.getColour(), player
-								.getUpgrade(), player.getAngle()));
+								.getUpgrade(), player.getAngle(),1));
 					}
 					// bullets.remove(currentBullet);
 					bulletHit = true;
@@ -235,6 +235,7 @@ public class Offline {
 											.yChange()) - c.getPos().getY()) <= 30
 							&& currentBullet.getID() != c.getID()) {
 						c.hit(10);
+						all.get(players.indexOf(c)+1).setPH(c.percentHealth());
 
 						if (!c.alive()) {
 							while (Offline.accessingAll) {

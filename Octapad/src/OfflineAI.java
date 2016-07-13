@@ -54,6 +54,10 @@ public class OfflineAI {
 	public double getBulletSpeed() {
 		return bulletSpeed;
 	}
+	
+	public double percentHealth(){
+		return health/100;
+	}
 
 	public void hit(int damage) {
 		health -= damage;

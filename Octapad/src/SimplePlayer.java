@@ -5,12 +5,22 @@ public class SimplePlayer {
 	private Position pos;
 	private Color c;
 	private int upgrade, angle;
+	private double percentHealth;
 
-	SimplePlayer(int x, int y, Color col, int upgrade, int angle) {
+	SimplePlayer(int x, int y, Color col, int upgrade, int angle, double ph) {
 		pos = new Position(x, y);
 		c = col;
 		this.upgrade = upgrade;
 		this.angle = angle;
+		percentHealth = ph;
+	}
+
+	public double getPercentHealth() {
+		return percentHealth;
+	}
+	
+	public void setPH(double d){
+		percentHealth=d;
 	}
 
 	public void setAngle(int i) {

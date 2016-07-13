@@ -413,6 +413,13 @@ public class OfflinePlayer extends JFrame {
 								+ p.getPos().getX() - pos.getX(), player.getY()
 								+ p.getPos().getY() - pos.getY()),
 								p.getAngle(), p.getColor());
+						g.fillRect(
+								p.getPos().getX()
+										+ (int) (HEALTH_LENGTH * (p.getPercentHealth()))
+										- 15,
+										p.getPos().getY() - 35,
+								(int) (HEALTH_LENGTH * (p.getPercentHealth())),
+								HEALTH_HEIGHT);
 					}
 				}
 				Offline.accessingAll = false;
@@ -902,31 +909,3 @@ public class OfflinePlayer extends JFrame {
 	}
 }
 
-// class tempPlayer {
-// private Position pos;
-// private Color c;
-// private short upgrade, angle;
-//
-// tempPlayer(Position p, Color col, short upgrade, short angle) {
-// pos = p;
-// c = col;
-// this.upgrade = upgrade;
-// this.angle = angle;
-// }
-//
-// public Position getPos() {
-// return pos;
-// }
-//
-// public Color getColor() {
-// return c;
-// }
-//
-// public int getUpgrade() {
-// return upgrade;
-// }
-//
-// public int getAngle() {
-// return angle;
-// }
-// }
